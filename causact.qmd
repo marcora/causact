@@ -1,0 +1,196 @@
+---
+title: "causact"
+format:
+  html:
+    toc: true
+    df-print: kable
+---
+
+## Introduction
+
+There are three languages at the core of any data analysis: narrative, math, and code.
+
+-   **Narrative**: This is the language of your real-world understanding.
+
+-   **Math**: This is the language describing a faithful mathematical representation of your real-world narrative whose solution or output might turn your data into data-driven insight.
+
+-   **Code**: This is the programming language, the code required to generate output that exactly or approximately solves your math problem or generates the desired output.
+
+Using Bayesian inference is the provably best method of combining data with domain knowledge to extract interpretable and insightful results that lead us towards better outcomes.
+
+This is the job of the *business analyst*; to drive better outcomes by compelling actions that are aligned with strategy and informed by data.
+
+![](images/clipboard-2076919182.png)
+
+![](images/clipboard-613416536.png)
+
+The business analyst workflow consists of transforming the real-world into a compact mathematical representation that we can use, along with data, to computationally search for insights. These computational insights must then be translated back into the real-world in such a way that they inspire action which leads to improved outcomes. This is your role: transform the real-world into the math/computer world, extract mathematical/statistical/computational insight, then transform that insight into a compelling real-world call for action.
+
+![](images/clipboard-3434935492.png)
+
+## Uncertainty
+
+[Real-world uncertainty]{.smallcaps} makes decision making hard. Conversely, without uncertainty decisions would be easier. For example, if a cafe knew exactly 10 customers would want a bagel, then they could make exactly 10 bagels in the morning; if a factory’s machine could make each part exactly the same, then quality control to ensure the part’s fit could be eliminated; if a customer’s future ability to pay back a loan was known, then a bank’s decision to underwrite the loan would be quite simple.
+
+In this section, we learn to represent our real-world uncertainty (e.g. demand for bagels, quality of a manufacturing process , or risk of loan default) in mathematical and computational terms. We start by defining the ideal mathematical way of representing uncertainty, namely by assigning a *probability distribution* to a *random variable*. Subsequently, we learn to describe our uncertainty in a *random variable* using *representative samples* as a pragmatic computational proxy to this mathematical ideal.
+
+Think of a random variable as a mapping from potential outcomes to numerical values representing the probability we assign to each outcome.
+
+| Outcome | Probability |
+|---------|-------------|
+| Heads   | 0.5         |
+| Tails   | 0.5         |
+
+While the table might be adequate to describe the mapping of coin flip outcomes to probability, as we make more complex models of the real-world, we will want to take advantage of the concise (and often terse) notation that mathematicians would use. In addition, we want to gain fluency in *math world* notation so that we can successfully traverse the bridge between *real world* and *math world*.
+
+Above, a random variable was introduced as a mapping of outcomes to probabilities. And, this is how you should think of it most of the time. However, to start gaining fluency in the math-world definition of a random variable, we will also view this mapping process as not just one mapping, but rather a sequence of two mappings: 1) the first mapping is actually the “true” probability-theory definition of a **random variable** - it maps all possible outcomes to real numbers, and 2) the second mapping, known as a **probability distribution** in probability theory, maps the numbers from the first mapping to real numbers representing how plausibility is allocated across all possible outcomes - we often think of this allocation as assigning probability to each outcome.
+
+The terse math-world representation of a mapping process like this is denoted:
+
+$$
+X:\Omega \rightarrow \mathbb{R}
+$$
+
+, where you interpret it as “random variable $X$ maps each possible outcome in sample space omega to a real number.”
+
+The second mapping process then assigns a probability distribution to the random variable. By convention, lowercase letters, e.g. $x$, represent actual observed outcomes. We call $x$ the *realization* of random variable $X$ and define the mapping of outcomes to probability for every $x \in X$ (read as $x$ “in” $X$ and interpret it to mean “for each possible realization of random variable $X$”).
+
+In this book, we will use $f$, to denote a function that maps each possible realization of a random variable to its corresponding plausibilty measure and use a subscript to disambiguate which random variable is being referred to when necessary. For the coin flip example:
+
+$$
+f_X: X \rightarrow [0,1]
+$$
+
+Despite all this fancy notation, for small problems it is sometimes the best course of action to think of a random variable as a lookup table as shown here:
+
+| Outcome | Realization ($x$) | $f(x)$ |
+|---------|-------------------|--------|
+| Heads   | 1                 | 0.5    |
+| Tails   | 0                 | 0.5    |
+
+and where $f(x)$ can be interpreted as the plausability assigned to random variable $X$ taking on the value $x$.
+
+The Bernoulli distribution (or a Bernoulli random variable):
+
+| Outcome | Realization ($x$) | $f(x)$  |
+|---------|-------------------|---------|
+| Success | 1                 | $\pi$   |
+| Failure | 0                 | $1-\pi$ |
+
+With all of this background, we are now equipped to model uncertainty in any observable data that has two outcomes. The way we will represent this uncertainty is using two forms: 1) a graphical model and 2) a statistical model.
+
+```{r setup}
+#| output: false
+library(tidyverse)
+library(ggformula)
+library(causact) # causact::install_causact_deps()
+
+theme_set(theme_minimal())
+
+set.seed(123)
+```
+
+```{r}
+dag_create() |>
+  dag_node(
+    descr = "Coin flip",
+    label = "X") |>
+  dag_render(shortLabel = TRUE)
+```
+
+$$
+\begin{aligned}X &\equiv \textrm{Coin flip outcome with heads}=1 \textrm{  and tails}=0.\\X &\sim \textrm{Bernoulli}(p)\end{aligned}
+$$
+
+Instead of working with probability distributions directly as *mathematical* objects, we will most often seek a representative sample and treat them as *computational* objects (i.e. **data**). For modelling a coin flip, the representative sample might simply be a list of $0$ and $1$ generated by someone flipping a coin or by a computer simulating someone flipping a coin.
+
+[Turning a mathematical object into a representative sample using R]{.smallcaps} is quite easy as R can be used to generate random outcomes from just about all well-known probability distributions.
+
+```{r}
+rbern(7, p = 0.5)
+```
+
+```{r}
+set.seed(123) 
+
+# Create dataframe of coinflip observations
+numFlips = 50 ## flip the coin 50 times
+df = data.frame(
+  flipNum = 1:numFlips,
+  coinFlip = rbern(n=numFlips,prob=0.5)
+  ) %>%
+  mutate(headsProportion = cummean(coinFlip))
+  
+# Plot results
+ggplot(df, aes(x = flipNum, y = headsProportion)) + 
+  geom_point() +
+  geom_line() + 
+  geom_hline(yintercept = 0.5, color = "red") +
+  ggtitle("Running Proportion of Heads") +
+  xlab("Flip Number") + 
+  ylab("Proportion of Heads") +
+  ylim(c(0,1))
+```
+
+$$
+\begin{aligned}X_i &\equiv \textrm{If passenger } i \textrm{ shows up, then } X=1 \textrm{. Otherwise, } X = 0 \textrm{. Note: } i \in \{1,2,3\}.\\X_i &\sim \textrm{Bernoulli}(p = 0.85)\\Y &\equiv \textrm{Total number of passengers that show up.}\\Y &= X_1 + X_2 + X_3\end{aligned}
+$$
+
+```{r}
+numFlights = 1000 ## number of simulated flights
+probShow = 0.85 ## probability of passenger showing up
+
+# choose random seed so others can
+# replicate results
+set.seed(111) 
+
+pass1 = rbern(n = numFlights, prob = probShow)
+pass2 = rbern(n = numFlights, prob = probShow)
+pass3 = rbern(n = numFlights, prob = probShow)
+
+# create data frame (use tibble to from tidyverse) 
+flightDF = tibble(
+  simNum = 1:numFlights,
+  totalPassengers = pass1 + pass2 + pass3
+)
+
+# transform data to give proportion
+propDF = flightDF %>% 
+  group_by(totalPassengers) %>% 
+  summarize(numObserved = n()) %>%
+  mutate(proportion = numObserved / sum(numObserved))
+
+# plot data with estimates
+ggplot(propDF, 
+       aes(x = totalPassengers, y = proportion)) +
+  geom_col() +
+  geom_text(aes(label = proportion), nudge_y = 0.03)
+```
+
+Simulation will always be your friend in the sense that if given enough time, a simulation will always give you results that approximate mathematical exactness. The only problem with this friend is it is sometimes slow to yield representative results. In these cases, sometimes mathematics provides a shortcut. The shortcut we study here is to define a probability distibution.
+
+$$
+\begin{aligned}Y &\equiv \textrm{Total number of passengers that show up.}\\Y &\sim \textrm{Binomial}(n = 3, p = 0.85)\end{aligned}
+$$
+
+```{r}
+# transform data to give proportion
+propExactDF = tibble(totalPassengers = 0:3) %>%
+  mutate(proportion = 
+           dbinom(x = totalPassengers,
+                  size = 3,
+                  prob = 0.85))
+
+# plot data with estimates
+ggplot(propExactDF, aes(x = totalPassengers, 
+                        y = proportion)) +
+  geom_col() +
+  geom_text(aes(label = proportion), 
+            nudge_y = 0.03)
+```
+
+The above code is both simpler and faster than the approximation code run earlier. In addition, it gives exact results. Hence, when we can take mathematical shortcuts, we will to save time and reduce the uncertainty in our results introduced by approximation error.
+
+Our representation of uncertainty takes place in three worlds: 1) the real-world - we use graphical models (i.e. ovals) to convey the story of uncertainty, 2) the math-world - we use statistical models to rigorously define how random outcomes are generated, and 3) the computation-world - we use R functions to answer questions about exact distributions and representative samples to answer questions when the exact distribution is unobtainable.
+
+## Joint distributions tell you everything
