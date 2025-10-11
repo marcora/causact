@@ -28,7 +28,7 @@ The business analyst workflow consists of transforming the real-world into a com
 
 ![](images/clipboard-3434935492.png)
 
-## Uncertainty
+## Representing uncertainty
 
 [Real-world uncertainty]{.smallcaps} makes decision making hard. Conversely, without uncertainty decisions would be easier. For example, if a cafe knew exactly 10 customers would want a bagel, then they could make exactly 10 bagels in the morning; if a factory’s machine could make each part exactly the same, then quality control to ensure the part’s fit could be eliminated; if a customer’s future ability to pay back a loan was known, then a bank’s decision to underwrite the loan would be quite simple.
 
@@ -194,3 +194,60 @@ The above code is both simpler and faster than the approximation code run earlie
 Our representation of uncertainty takes place in three worlds: 1) the real-world - we use graphical models (i.e. ovals) to convey the story of uncertainty, 2) the math-world - we use statistical models to rigorously define how random outcomes are generated, and 3) the computation-world - we use R functions to answer questions about exact distributions and representative samples to answer questions when the exact distribution is unobtainable.
 
 ## Joint distributions tell you everything
+
+The most complete method of reasoning about sets of random variables is by having a *joint probability distribution*. A joint probability distribution, , assigns a probability value to all possible assignments or realizations of sets of random variables. The goal of this section is to 1) introduce you to the notation of joint probability distributions and 2) convince you that if you are given a joint probability distribution, then you would be able to answer some very useful questions using probability.
+
+### Joint distributions
+
+### Marginal distributions
+
+### Conditional distributions
+
+### Limitations of joint distributions
+
+[Why don’t we just use joint probability distributions all the time?]{.smallcaps} Despite the expressive power of having a joint probability distribution, they are not that easy to directly construct due to the *curse of dimensionality*. As the number of random variables being considered in a dataset grows, the number of potential probability assignments grows too. Even in the era of big data, this curse of dimensionality still exists.Generally speaking, an exponential increase is required in the size of the dataset as each new descriptive feature is added.
+
+Let’s assume we have $n$ random variables with each having $k$ values. Thus, the joint distribution requires $k^n$ probabilites. Even if $k=2$ and $n=34$, this leads to 17,179,869,184 possibilities (over 17 billion). To make this concrete, a typical car purchase decision might easily look at 34 different variables (e.g. make, model, color, style, financing, etc.). So, to model this decision would require a very large joint distribution which actually dwarfs the amount of data that is available. As a point of comparison, well under 100 million motor vehicles were sold worldwide in 2019 - i.e. less than one data point per possible combination of features. Despite this “curse”, we will learn to get around it with more compact representations of joint distributions. These representations will require less data, but will still yield the power to answer queries of interest; just as if we had access to the full joint distribution.
+
+## Graphical models tell joint distribution stories
+
+Graphical models serve as compact representations of joint probability distributions.
+
+It’s okay to not draw a perfect model when you are first attacking a problem.
+
+```{mermaid}
+graph TD
+    X[ X: It is raining ]
+    Y[ Y: The curb is wet ]
+    X --> Y
+```
+
+The diagram above is what mathematicians and computer scientists call a *graph*. To them, a *graph* is a set of related objects where the objects are called *nodes* and any pair of related nodes are known as an *edge*. For our purposes, a *node* is a visual depiction of a random variable (i.e. an oval) and the presence of a visible *edge* indicates a relationship between the connected random variables.
+
+Our first vetting should be to ensure that nodes can be modelled as a random variable with each node representing a mapping of real-world outcomes to numerical values (see the “Representing uncertainty” section above).
+
+Any variable we include in our models needs to be clearly defined and fulfill the requirements of a random variable; afterall, this is our key technique for representing the *real-world* in mathematical terms.
+
+Mathematically, our goal is to have a joint distribution over the random variables of interest. Once we have that, we can answer any probability query we might have using marginal and conditional distributions (see the “Joint distributions tell you everything” section above).
+
+For all but very simple models like the one above, a tabular representation of a joint distribution becomes unmanageable (computationally, cognitively, and statistically).
+
+To overcome this, we use a different, more-compact structure - called a *Bayesian Network* (BN). Bayesian networks are compressed, easier-to-specify recipes for generating a full joint distribution. So, what is a BN? It is a type of *graph* (i.e. nodes and edges), specifically a *directed acyclic graph* (DAG), with the following requirements:
+
+1.  All nodes represent random variables. They are drawn using ovals. By convention, a constant is also considered a random variable.
+
+2.  All edges are pairs of random variables with a specified direction of ordering. By convention, the direction is from parent node to child node. While not always true, it is usually good to have edges reflecting a causal ordering. Edges are drawn using arrows where the tail originates from the parent and the tip points to a child.
+
+3.  Edges are uni-directional, they must only flow in one direction between any two nodes (i.e. *directed*).
+
+4.  The graph is *acyclic* meaning there are no cycles. In other words, if you were to put your finger on any node and trace a path following the direction of the edges, you would not be able to return to the starting node.
+
+5.  Any child node’s probability distribution will be expressed as conditional solely on its parents’ values, i.e. $P(\text{child}\mid \text{parent(s)})$; this assumption is what enables more compact representations of joint distributions.
+
+The one edge, $Y \rightarrow X$, means that our uncertainty in $X$ is measured using a probability function conditional on its parent - i.e. $P(X|Y)$. Since there are no edges leading into $Y$, it has no parents, its probability distribution is $P(Y)$ . With those two probabilities in place, we can recover the joint distribution, $P(X,Y)$, based on the definition of conditional probability $P(X,Y) = P(Y) \times P(X|Y)$.
+
+If there are no edges between $X$ and $Y$, then the joint distribution is recovered via $P(X,Y)=P(X)\cdot P(Y)$. In this case, the two random variables are independent and that is not a model structure consistent with the scenario we are exploring. If the ordering of nodes for $X$ and $Y$ are reversed such that $Y$ is the parent of $X$, then the joint distribution would be recovered via $P(X,Y)=P(Y)\cdot P(X\mid Y)$. This math is not consistent with the story we are trying to tell. The story is that rain causes the curb to be wet, not the other way around.
+
+The general rule for a probabilistic graphical model is that its joint distribution can be factored using the chain rule formula for DAGs where $P(X_1, X_2, \ldots, X_n) = \prod_I P(X_i|Parents(X_i))$. Hence, to model any one random variable, we only have to model its relationship to its parents instead of modelling its relationship to all of the random variables included in the model.
+
+See mathematicalmonk’s youtube video on how joint distributions are compactly represented using DAGs here: <https://youtu.be/3XysEf3IQN4>.

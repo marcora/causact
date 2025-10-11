@@ -70,6 +70,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="causact_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="causact_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="causact_files/libs/bootstrap/bootstrap-d6a003b94517c951b2d65075d42fb01b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="causact_files/libs/quarto-diagram/mermaid.min.js"></script>
+<script src="causact_files/libs/quarto-diagram/mermaid-init.js"></script>
+<link href="causact_files/libs/quarto-diagram/mermaid.css" rel="stylesheet">
 <link href="causact_files/libs/htmltools-fill-0.5.8.1/fill.css" rel="stylesheet">
 <script src="causact_files/libs/htmlwidgets-1.6.4/htmlwidgets.js"></script>
 <script src="causact_files/libs/viz-1.8.2/viz.js"></script>
@@ -117,8 +120,15 @@ window.Quarto = {
    
   <ul>
   <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
-  <li><a href="#uncertainty" id="toc-uncertainty" class="nav-link" data-scroll-target="#uncertainty">Uncertainty</a></li>
-  <li><a href="#joint-distributions-tell-you-everything" id="toc-joint-distributions-tell-you-everything" class="nav-link" data-scroll-target="#joint-distributions-tell-you-everything">Joint distributions tell you everything</a></li>
+  <li><a href="#representing-uncertainty" id="toc-representing-uncertainty" class="nav-link" data-scroll-target="#representing-uncertainty">Representing uncertainty</a></li>
+  <li><a href="#joint-distributions-tell-you-everything" id="toc-joint-distributions-tell-you-everything" class="nav-link" data-scroll-target="#joint-distributions-tell-you-everything">Joint distributions tell you everything</a>
+  <ul class="collapse">
+  <li><a href="#joint-distributions" id="toc-joint-distributions" class="nav-link" data-scroll-target="#joint-distributions">Joint distributions</a></li>
+  <li><a href="#marginal-distributions" id="toc-marginal-distributions" class="nav-link" data-scroll-target="#marginal-distributions">Marginal distributions</a></li>
+  <li><a href="#conditional-distributions" id="toc-conditional-distributions" class="nav-link" data-scroll-target="#conditional-distributions">Conditional distributions</a></li>
+  <li><a href="#limitations-of-joint-distributions" id="toc-limitations-of-joint-distributions" class="nav-link" data-scroll-target="#limitations-of-joint-distributions">Limitations of joint distributions</a></li>
+  </ul></li>
+  <li><a href="#graphical-models-tell-joint-distribution-stories" id="toc-graphical-models-tell-joint-distribution-stories" class="nav-link" data-scroll-target="#graphical-models-tell-joint-distribution-stories">Graphical models tell joint distribution stories</a></li>
   </ul>
 </nav>
 </div>
@@ -158,8 +168,8 @@ window.Quarto = {
 <p>The business analyst workflow consists of transforming the real-world into a compact mathematical representation that we can use, along with data, to computationally search for insights. These computational insights must then be translated back into the real-world in such a way that they inspire action which leads to improved outcomes. This is your role: transform the real-world into the math/computer world, extract mathematical/statistical/computational insight, then transform that insight into a compelling real-world call for action.</p>
 <p><img src="images/clipboard-3434935492.png" class="img-fluid"></p>
 </section>
-<section id="uncertainty" class="level2">
-<h2 class="anchored" data-anchor-id="uncertainty">Uncertainty</h2>
+<section id="representing-uncertainty" class="level2">
+<h2 class="anchored" data-anchor-id="representing-uncertainty">Representing uncertainty</h2>
 <p><span class="smallcaps">Real-world uncertainty</span> makes decision making hard. Conversely, without uncertainty decisions would be easier. For example, if a cafe knew exactly 10 customers would want a bagel, then they could make exactly 10 bagels in the morning; if a factory’s machine could make each part exactly the same, then quality control to ensure the part’s fit could be eliminated; if a customer’s future ability to pay back a loan was known, then a bank’s decision to underwrite the loan would be quite simple.</p>
 <p>In this section, we learn to represent our real-world uncertainty (e.g.&nbsp;demand for bagels, quality of a manufacturing process , or risk of loan default) in mathematical and computational terms. We start by defining the ideal mathematical way of representing uncertainty, namely by assigning a <em>probability distribution</em> to a <em>random variable</em>. Subsequently, we learn to describe our uncertainty in a <em>random variable</em> using <em>representative samples</em> as a pragmatic computational proxy to this mathematical ideal.</p>
 <p>Think of a random variable as a mapping from potential outcomes to numerical values representing the probability we assign to each outcome.</p>
@@ -369,6 +379,58 @@ f_X: X \rightarrow [0,1]
 </section>
 <section id="joint-distributions-tell-you-everything" class="level2">
 <h2 class="anchored" data-anchor-id="joint-distributions-tell-you-everything">Joint distributions tell you everything</h2>
+<p>The most complete method of reasoning about sets of random variables is by having a <em>joint probability distribution</em>. A joint probability distribution, , assigns a probability value to all possible assignments or realizations of sets of random variables. The goal of this section is to 1) introduce you to the notation of joint probability distributions and 2) convince you that if you are given a joint probability distribution, then you would be able to answer some very useful questions using probability.</p>
+<section id="joint-distributions" class="level3">
+<h3 class="anchored" data-anchor-id="joint-distributions">Joint distributions</h3>
+</section>
+<section id="marginal-distributions" class="level3">
+<h3 class="anchored" data-anchor-id="marginal-distributions">Marginal distributions</h3>
+</section>
+<section id="conditional-distributions" class="level3">
+<h3 class="anchored" data-anchor-id="conditional-distributions">Conditional distributions</h3>
+</section>
+<section id="limitations-of-joint-distributions" class="level3">
+<h3 class="anchored" data-anchor-id="limitations-of-joint-distributions">Limitations of joint distributions</h3>
+<p><span class="smallcaps">Why don’t we just use joint probability distributions all the time?</span> Despite the expressive power of having a joint probability distribution, they are not that easy to directly construct due to the <em>curse of dimensionality</em>. As the number of random variables being considered in a dataset grows, the number of potential probability assignments grows too. Even in the era of big data, this curse of dimensionality still exists.Generally speaking, an exponential increase is required in the size of the dataset as each new descriptive feature is added.</p>
+<p>Let’s assume we have <span class="math inline">\(n\)</span> random variables with each having <span class="math inline">\(k\)</span> values. Thus, the joint distribution requires <span class="math inline">\(k^n\)</span> probabilites. Even if <span class="math inline">\(k=2\)</span> and <span class="math inline">\(n=34\)</span>, this leads to 17,179,869,184 possibilities (over 17 billion). To make this concrete, a typical car purchase decision might easily look at 34 different variables (e.g.&nbsp;make, model, color, style, financing, etc.). So, to model this decision would require a very large joint distribution which actually dwarfs the amount of data that is available. As a point of comparison, well under 100 million motor vehicles were sold worldwide in 2019 - i.e.&nbsp;less than one data point per possible combination of features. Despite this “curse”, we will learn to get around it with more compact representations of joint distributions. These representations will require less data, but will still yield the power to answer queries of interest; just as if we had access to the full joint distribution.</p>
+</section>
+</section>
+<section id="graphical-models-tell-joint-distribution-stories" class="level2">
+<h2 class="anchored" data-anchor-id="graphical-models-tell-joint-distribution-stories">Graphical models tell joint distribution stories</h2>
+<p>Graphical models serve as compact representations of joint probability distributions.</p>
+<p>It’s okay to not draw a perfect model when you are first attacking a problem.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">graph TD
+    X[ X: It is raining ]
+    Y[ Y: The curb is wet ]
+    X --&gt; Y
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<p>The diagram above is what mathematicians and computer scientists call a <em>graph</em>. To them, a <em>graph</em> is a set of related objects where the objects are called <em>nodes</em> and any pair of related nodes are known as an <em>edge</em>. For our purposes, a <em>node</em> is a visual depiction of a random variable (i.e.&nbsp;an oval) and the presence of a visible <em>edge</em> indicates a relationship between the connected random variables.</p>
+<p>Our first vetting should be to ensure that nodes can be modelled as a random variable with each node representing a mapping of real-world outcomes to numerical values (see the “Representing uncertainty” section above).</p>
+<p>Any variable we include in our models needs to be clearly defined and fulfill the requirements of a random variable; afterall, this is our key technique for representing the <em>real-world</em> in mathematical terms.</p>
+<p>Mathematically, our goal is to have a joint distribution over the random variables of interest. Once we have that, we can answer any probability query we might have using marginal and conditional distributions (see the “Joint distributions tell you everything” section above).</p>
+<p>For all but very simple models like the one above, a tabular representation of a joint distribution becomes unmanageable (computationally, cognitively, and statistically).</p>
+<p>To overcome this, we use a different, more-compact structure - called a <em>Bayesian Network</em> (BN). Bayesian networks are compressed, easier-to-specify recipes for generating a full joint distribution. So, what is a BN? It is a type of <em>graph</em> (i.e.&nbsp;nodes and edges), specifically a <em>directed acyclic graph</em> (DAG), with the following requirements:</p>
+<ol type="1">
+<li><p>All nodes represent random variables. They are drawn using ovals. By convention, a constant is also considered a random variable.</p></li>
+<li><p>All edges are pairs of random variables with a specified direction of ordering. By convention, the direction is from parent node to child node. While not always true, it is usually good to have edges reflecting a causal ordering. Edges are drawn using arrows where the tail originates from the parent and the tip points to a child.</p></li>
+<li><p>Edges are uni-directional, they must only flow in one direction between any two nodes (i.e.&nbsp;<em>directed</em>).</p></li>
+<li><p>The graph is <em>acyclic</em> meaning there are no cycles. In other words, if you were to put your finger on any node and trace a path following the direction of the edges, you would not be able to return to the starting node.</p></li>
+<li><p>Any child node’s probability distribution will be expressed as conditional solely on its parents’ values, i.e.&nbsp;<span class="math inline">\(P(\text{child}\mid \text{parent(s)})\)</span>; this assumption is what enables more compact representations of joint distributions.</p></li>
+</ol>
+<p>The one edge, <span class="math inline">\(Y \rightarrow X\)</span>, means that our uncertainty in <span class="math inline">\(X\)</span> is measured using a probability function conditional on its parent - i.e.&nbsp;<span class="math inline">\(P(X|Y)\)</span>. Since there are no edges leading into <span class="math inline">\(Y\)</span>, it has no parents, its probability distribution is <span class="math inline">\(P(Y)\)</span> . With those two probabilities in place, we can recover the joint distribution, <span class="math inline">\(P(X,Y)\)</span>, based on the definition of conditional probability <span class="math inline">\(P(X,Y) = P(Y) \times P(X|Y)\)</span>.</p>
+<p>If there are no edges between <span class="math inline">\(X\)</span> and <span class="math inline">\(Y\)</span>, then the joint distribution is recovered via <span class="math inline">\(P(X,Y)=P(X)\cdot P(Y)\)</span>. In this case, the two random variables are independent and that is not a model structure consistent with the scenario we are exploring. If the ordering of nodes for <span class="math inline">\(X\)</span> and <span class="math inline">\(Y\)</span> are reversed such that <span class="math inline">\(Y\)</span> is the parent of <span class="math inline">\(X\)</span>, then the joint distribution would be recovered via <span class="math inline">\(P(X,Y)=P(Y)\cdot P(X\mid Y)\)</span>. This math is not consistent with the story we are trying to tell. The story is that rain causes the curb to be wet, not the other way around.</p>
+<p>The general rule for a probabilistic graphical model is that its joint distribution can be factored using the chain rule formula for DAGs where <span class="math inline">\(P(X_1, X_2, \ldots, X_n) = \prod_I P(X_i|Parents(X_i))\)</span>. Hence, to model any one random variable, we only have to model its relationship to its parents instead of modelling its relationship to all of the random variables included in the model.</p>
+<p>See mathematicalmonk’s youtube video on how joint distributions are compactly represented using DAGs here: <a href="https://youtu.be/3XysEf3IQN4" class="uri">https://youtu.be/3XysEf3IQN4</a>.</p>
 </section>
 
 </main>
