@@ -135,10 +135,20 @@ window.Quarto = {
   <li><a href="#from-model-to-joint-distribution" id="toc-from-model-to-joint-distribution" class="nav-link" data-scroll-target="#from-model-to-joint-distribution">From model to joint distribution</a></li>
   <li><a href="#bayesian-updating-of-the-joint-distribution" id="toc-bayesian-updating-of-the-joint-distribution" class="nav-link" data-scroll-target="#bayesian-updating-of-the-joint-distribution">Bayesian updating of the joint distribution</a></li>
   </ul></li>
-  <li><a href="#generative-dags-and-scientific-and-statistical-models" id="toc-generative-dags-and-scientific-and-statistical-models" class="nav-link" data-scroll-target="#generative-dags-and-scientific-and-statistical-models">Generative DAGs and scientific and statistical models</a>
+  <li><a href="#generative-dags-as-scientific-and-statistical-models" id="toc-generative-dags-as-scientific-and-statistical-models" class="nav-link" data-scroll-target="#generative-dags-as-scientific-and-statistical-models">Generative DAGs as scientific and statistical models</a>
   <ul class="collapse">
   <li><a href="#generative-dags" id="toc-generative-dags" class="nav-link" data-scroll-target="#generative-dags">Generative DAGs</a></li>
-  <li><a href="#building-generative-dags" id="toc-building-generative-dags" class="nav-link" data-scroll-target="#building-generative-dags">Building generative DAGs</a></li>
+  <li><a href="#building-generative-models" id="toc-building-generative-models" class="nav-link" data-scroll-target="#building-generative-models">Building generative models</a></li>
+  <li><a href="#representing-observed-data-with-fill-and-a-plate" id="toc-representing-observed-data-with-fill-and-a-plate" class="nav-link" data-scroll-target="#representing-observed-data-with-fill-and-a-plate">Representing observed data with fill and a plate</a></li>
+  </ul></li>
+  <li><a href="#computational-bayesian-inference-workflows" id="toc-computational-bayesian-inference-workflows" class="nav-link" data-scroll-target="#computational-bayesian-inference-workflows">Computational Bayesian inference workflows</a>
+  <ul class="collapse">
+  <li><a href="#getting-started-with-dag_foo-functions" id="toc-getting-started-with-dag_foo-functions" class="nav-link" data-scroll-target="#getting-started-with-dag_foo-functions">Getting started with <code>dag_foo()</code> functions</a></li>
+  <li><a href="#four-steps-to-creating-graphical-models" id="toc-four-steps-to-creating-graphical-models" class="nav-link" data-scroll-target="#four-steps-to-creating-graphical-models">Four steps to creating graphical models</a></li>
+  <li><a href="#running-bayesian-inference-on-a-generative-dag" id="toc-running-bayesian-inference-on-a-generative-dag" class="nav-link" data-scroll-target="#running-bayesian-inference-on-a-generative-dag">Running Bayesian inference on a generative DAG</a></li>
+  <li><a href="#investigating-the-posterior-distribution" id="toc-investigating-the-posterior-distribution" class="nav-link" data-scroll-target="#investigating-the-posterior-distribution">Investigating the posterior distribution</a></li>
+  <li><a href="#making-probabilistic-statements-with-indicator-functions" id="toc-making-probabilistic-statements-with-indicator-functions" class="nav-link" data-scroll-target="#making-probabilistic-statements-with-indicator-functions">Making probabilistic statements with indicator functions</a></li>
+  <li><a href="#credit-card-example" id="toc-credit-card-example" class="nav-link" data-scroll-target="#credit-card-example">Credit card example</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -164,6 +174,18 @@ window.Quarto = {
 </header>
 
 
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggformula)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(mosaic)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(posterior)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(bayesplot)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(causact) <span class="co"># causact::install_causact_deps()</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_set</span>(<span class="fu">theme_minimal</span>())</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
 <section id="introduction" class="level2">
 <h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
 <p>There are three languages at the core of any data analysis: narrative, math, and code.</p>
@@ -260,18 +282,6 @@ f_X: X \rightarrow [0,1]
 </tbody>
 </table>
 <p>With all of this background, we are now equipped to model uncertainty in any observable data that has two outcomes. The way we will represent this uncertainty is using two forms: 1) a graphical model and 2) a statistical model.</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggformula)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(mosaic)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(posterior)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(bayesplot)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(causact) <span class="co"># causact::install_causact_deps()</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_set</span>(<span class="fu">theme_minimal</span>())</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dag_create</span>() <span class="sc">|&gt;</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(</span>
@@ -785,8 +795,8 @@ P(\theta=20\%|X=1) = \frac{P(X=1|\theta=20\%) \times P(\theta=20\%)}{P(X=1)} = \
 </div>
 </section>
 </section>
-<section id="generative-dags-and-scientific-and-statistical-models" class="level2">
-<h2 class="anchored" data-anchor-id="generative-dags-and-scientific-and-statistical-models">Generative DAGs and scientific and statistical models</h2>
+<section id="generative-dags-as-scientific-and-statistical-models" class="level2">
+<h2 class="anchored" data-anchor-id="generative-dags-as-scientific-and-statistical-models">Generative DAGs as scientific and statistical models</h2>
 <p>Up to this point, we specified a prior joint distribution using information from both a graphical model and a statistical model. In this section, we combine the two model types, graphical models and statistical models, into one visualization called the generative DAG.</p>
 <p>The advantage of this is that the generative DAG unites real-world measurements (e.g.&nbsp;cognition increases) with their math/computation world counterparts (e.g.&nbsp;<span class="math inline">\(X \sim \textrm{Bernoulli}(\theta)\)</span>) without requiring the cognitive load of flipping back-and-forth between the graphical and statistical models.</p>
 <p>Moreover, generative DAGs, when combined with data, enable Bayesian inference to be automated (yay! no more manual calculations using Bayes rule).</p>
@@ -807,44 +817,605 @@ Note
 </div>
 </div>
 <p>The objective in building generative DAGs is to capture how we might go about simulating real-world measurements using the mathematical language we’ve been learning. Good generative DAGs are recipes for simulating a real-world observation in a way that reflects our domain knowledge. Then, with a generative DAG and some actual data, we will ask the computer to do Bayesian inference for us and to output an updated joint distribution of the random variables in our DAG.</p>
-<p>The creation of a generative DAG mimics the creation of graphical models with accompanying statistical models. Both the structure of the DAG and the definition of the random variables should reflect what a domain expert knows, or wants to assume, about the scientific narrative being investigated.</p>
+<p>The creation of a generative DAG mimics the creation of graphical models with accompanying statistical models. Both the structure of the DAG and the definition of the random variables should reflect what a domain expert knows, or wants to assume, about the data generating process being investigated.</p>
+<p>Here is the generative DAG for the scenario described before. We have seen some elements of this DAG before. For example, the <em>Cognition increase</em>s <span class="math inline">\(X\)</span> node, whose prominent feature is that it can only take on two-values, <em>yes</em> or <em>no</em>. We model these binary-valued real-world outcomes with the probabilistic mapping (Bernoulli PMF) <span class="math inline">\(x \sim \textrm{Bernoulli}(\theta)\)</span>.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dag_create</span>() <span class="sc">|&gt;</span></span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(</span>
 <span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">descr =</span> <span class="st">"Cognition increases"</span>,</span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">"X"</span>,</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">"x"</span>,</span>
 <span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">rhs =</span> <span class="fu">bernoulli</span>(theta)) <span class="sc">|&gt;</span></span>
 <span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(</span>
 <span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">descr =</span> <span class="st">"Success probability"</span>,</span>
-<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">"Θ"</span>,</span>
-<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">child =</span> <span class="st">"X"</span>,</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">"theta"</span>,</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">child =</span> <span class="st">"x"</span>,</span>
 <span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">rhs =</span> <span class="fu">uniform</span>(<span class="dv">0</span>,<span class="dv">1</span>)) <span class="sc">|&gt;</span></span>
 <span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="grViz html-widget html-fill-item" id="htmlwidget-744b8e1fe96c0688a849" style="width:100%;height:464px;"></div>
-<script type="application/json" data-for="htmlwidget-744b8e1fe96c0688a849">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\n  \"1\" [label = \"Cognition increases\nX ~ bernoulli(theta)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"2\" [label = \"Success probability\nΘ ~ uniform(0,1)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n\"2\"->\"1\" [style = \"solid\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<script type="application/json" data-for="htmlwidget-744b8e1fe96c0688a849">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\n  \"1\" [label = \"Cognition increases\nx ~ bernoulli(theta)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"2\" [label = \"Success probability\ntheta ~ uniform(0,1)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n\"2\"->\"1\" [style = \"solid\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
-<p>Notice, <code>theta</code> is now spelled out phonetically as opposed to using the actual Greek letter math symbol of <span class="math inline">\(\theta\)</span>. While this need not be done when drawing a generative DAG by hand, we phonetically spell out the Greek letter <span class="math inline">\(\theta\)</span> as <code>theta</code> here because computer code and computer-generated DAG visuals lack easy support for the Greek alphabet. Additionally, and more importantly, we switch to using lowercase notation for both <code>x</code> and <code>theta</code> as we want to highlight that ovals in generative DAG models represent a single realization of the random variable. Later we will introduce the representation of more than one realization.</p>
+<p>Other elements of the DAG are new. Notice, <code>theta</code> is now spelled out phonetically as opposed to using the actual Greek letter math symbol of <span class="math inline">\(\theta\)</span>. While this need not be done when drawing a generative DAG by hand, we phonetically spell out the Greek letter <span class="math inline">\(\theta\)</span> as <code>theta</code> here because computer code and computer-generated DAG visuals lack easy support for the Greek alphabet. Additionally, and more importantly, we switch to using lowercase notation for both <code>x</code> and <code>theta</code> as we want to highlight that ovals in generative DAG models represent a single realization of the random variable. Later we will introduce the representation of more than one realization.</p>
 </section>
-<section id="building-generative-dags" class="level3">
-<h3 class="anchored" data-anchor-id="building-generative-dags">Building generative DAGs</h3>
-<p>As we build these generative DAGs, it is often easiest to build and read them from bottom to top.</p>
-<p>Every node will also have a mathematical line (e.g.&nbsp;<code>x ~ Bernoulli(theta)</code> ). The mathematical line will always follow a three-part structure of 1) Left-hand side, 2) Relationship Type, and 3) Right-hand side:</p>
+<section id="building-generative-models" class="level3">
+<h3 class="anchored" data-anchor-id="building-generative-models">Building generative models</h3>
+<p>As we build these generative DAGs, it is often easiest to build and read them from bottom to top; start by converting your target measurement, in this case whether the cognition of patients with AD increases after treatment with a new drug, to a brief real-world description (e.g.&nbsp;<em>Cognition increases</em>). This description is the top-line of the oval. For rigor, a more formal definition should be stored outside of the generative DAG in a simple text document that can be referenced by others.</p>
+<p>Every node will also have a mathematical line (e.g.&nbsp;<span class="math inline">\(x \sim \textrm{Bernoulli}(theta)\)</span>). The mathematical line will always follow a three-part structure of 1) Left-hand side, 2) Relationship Type, and 3) Right-hand side:</p>
 <p>Each line of a statistical model follows one of two forms: or</p>
 <ul>
 <li><p><strong>Left-hand side (LHS)</strong>: a mathematical label for a realization of the node (e.g.&nbsp;<span class="math inline">\(x\)</span> or <span class="math inline">\(y\)</span> or whatever symbol/word you choose). The purpose of the label is to have a very short way of referring to a node. To that end, you cannot include spaces in this label and try to keep it at five letters or less.</p></li>
 <li><p><strong>Relationship Type</strong>: There are two types of relationships that can be specified:</p></li>
 </ul>
 <ol type="1">
-<li><p>a <em>probabilistic</em> relationship, denoted by the <span class="math inline">\(\sim\)</span> symbol, where the LHS node’s value is determined in a way that has some inherent randomness, such as the outcome of a coin flip. Or,</p>
-<ol type="1">
-<li>a <em>deterministic</em> relationship denoted by an <span class="math inline">\(=\)</span> symbol. A deterministic relationship means the LHS node’s value is determined with zero uncertainty as a function of its inputs.</li>
-</ol></li>
+<li><p>a <em>probabilistic</em> relationship, denoted by the <span class="math inline">\(\sim\)</span> symbol, where the LHS node’s value is determined with some uncertainty/randomness as a function of its inputs, such as the outcome of a coin flip. <span class="math inline">\(LHS \sim \textrm{Probability mass/density function}\)</span> Or,</p></li>
+<li><p>a <em>deterministic</em> relationship denoted by an <span class="math inline">\(=\)</span> symbol. A deterministic relationship means the LHS node’s value is determined with zero uncertainty as a function of its inputs. <span class="math inline">\(LHS \sim \textrm{Deterministic function}\)</span></p></li>
 </ol>
 <ul>
-<li><strong>Right-hand side (RHS)</strong>: either a known probability distribution governing the node’s probabilistic outcome (e.g.&nbsp;<span class="math inline">\(\textrm{Bernoulli}(\theta)\)</span>) or a mathematical function defining the node’s value (e.g.&nbsp;<span class="math inline">\(x + y\)</span> ). In both cases, any parameters/variables/inputs in the RHS must be represented by a parent node to the current node in your model.</li>
+<li><strong>Right-hand side (RHS)</strong>: either a known probability distribution (i.e., probability mass or density function) governing the node’s random outcome (e.g.&nbsp;<span class="math inline">\(\textrm{Bernoulli}(\theta)\)</span>) or a deterministic mathematical function defining the node’s value (e.g.&nbsp;<span class="math inline">\(x + y\)</span> ). In both cases, any parameters/variables/inputs in the RHS must be represented by a parent node to the current node in your model.</li>
 </ul>
+<p>To model subsequent nodes, consider any parameters or variables on the right-hand side of the mathematical lines that remain undefined; all of these undefined parameters must be defined on the LHS of a parent node. Hence, for <span class="math inline">\(x \sim \textrm{Bernoulli}(theta)\)</span>, <span class="math inline">\(\theta\)</span> should be (and is) the LHS of a parent node of <span class="math inline">\(x\)</span>.</p>
+<p>Now to have a complete statistical model, we need a recipe for how all the random variables of interest can be generated. Previously, when doing Bayes rule calculations by hand, we considered a recipe for with only two possible values. However, as we move towards using the computer to do Bayesian inference for us, we now consider all of the possibilities - any value between 0 and 1.</p>
+<p>The generative DAG above introduces us to the uniform distribution. The <span class="math inline">\(\textrm{uniform}(a, b)\)</span> distribution is a two-parameter probability distribution with the property that all real numbers between <span class="math inline">\(a\)</span> and <span class="math inline">\(b\)</span> are generated with equal probability. Hence, for our application where represents a probability restricted to be between 0 and 1, we use <span class="math inline">\(\textrm{uniform}(0, 1)\)</span> to represent our consideration of the infinite possible values of success probability ranging from 0% to 100%.</p>
+<p>Since all nodes/variables (<span class="math inline">\(x\)</span> and <span class="math inline">\(\theta\)</span>) have a mathematical line, and all RHS parameters/variables are defined, the DAG above represents a generative model. The top line of each oval is a meaningful real-world description of the random variable and the bottom line gives the math.</p>
+<p>Notice that the generative DAG is a recipe for simulating or generating a single sample/realization from the joint distribution - read it from top-to-bottom: 1) first, simulate a random sample value of <span class="math inline">\(\theta\)</span>, say the realization is 10%, and then 2) use that sample value to simulate <span class="math inline">\(x\)</span>, which assuming <span class="math inline">\(\theta = 10\%\)</span>, is either 0 with 90% probability or 1 with 10% probability.</p>
+<p>For illustrating the simulation aspect of a generative DAG, we can use simple R functions to get a joint realization of the two variables. We model <span class="math inline">\(\theta\)</span> as <span class="math inline">\(\textrm{uniform}(0, 1)\)</span> and <span class="math inline">\(x\)</span> as <span class="math inline">\(\textrm{bernoulli}(\theta)\)</span> computationally using the functions <code>runif</code> and <code>rbern</code> (i.e.&nbsp;<code>rfoo</code> for the uniform distribution and Bernoulli distribution, respectively). Hence, a random sample from the joint distribution of <span class="math inline">\(\Theta\)</span> and <span class="math inline">\(X\)</span> can be generated with the following code:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="co"># generate random theta: n is # of samples we want</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>theta <span class="ot">=</span> <span class="fu">runif</span>(<span class="at">n=</span><span class="dv">1</span>,<span class="at">min=</span><span class="dv">0</span>,<span class="at">max=</span><span class="dv">1</span>)</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>theta <span class="co"># print value</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.1137</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># generate random X</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>x <span class="ot">=</span> <span class="fu">rbern</span>(<span class="at">n =</span> <span class="dv">1</span>, <span class="at">prob =</span> theta)</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>x <span class="co"># print value</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0</code></pre>
+</div>
+</div>
+<p>For the particular model above, the recipe picked a random <span class="math inline">\(\theta\)</span> of 11.4% and then, using that small probability of success, generated a random <span class="math inline">\(x\)</span> with 11.4% chance of giving a one. Unsurprisingly, the random sample from <span class="math inline">\(x\)</span> was zero.</p>
+<p>A generative models is a mathematical abstraction of a real-world data generating process (DGP); they represent, in the formal language of probability theory, our knowledge of the DGP. We will use these abstractions and Bayesian inference to combine prior information in the form of a generative DAG with observed data. The combination will yield us a posterior distribution; a joint distribution over our RV’s of interest that we can use to answer questions and generate insight. For most generative DAGs, Bayes rule is not analytically tractable (i.e.&nbsp;it can’t be reduced to simple math), and we need to define a computational model using a probabilistic programming language.</p>
+</section>
+<section id="representing-observed-data-with-fill-and-a-plate" class="level3">
+<h3 class="anchored" data-anchor-id="representing-observed-data-with-fill-and-a-plate">Representing observed data with fill and a plate</h3>
+<p>A generative DAG represents a family of recipes (i.e., hypothesis space, where each hypothesis/recipe is indexed by a parameter value or combination of parameter values) for simulating one real-world observation. We can then use data to inform us about which of the recipes seem more consistent with the data. For example, we know that observing cognition increase not in one but three patients with AD after drug treatment would be less consistent with the recipe based on the pessimist model <span class="math inline">\(\theta = 20\%\)</span> and more consistent with the recipe based on the optimist model <span class="math inline">\(\theta = 70\%\)</span>. Thus, reallocating plausibility in light of this type of data becomes a milestone during our data analysis.</p>
+<p>In the generative DAG above, the reallocation of probability in light of the data will be done in such a way as to give more plausibility to <span class="math inline">\(\theta\)</span> values consistent with the observations and less plausibility to the other <span class="math inline">\(\theta\)</span> values.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dag_create</span>() <span class="sc">|&gt;</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">descr =</span> <span class="st">"Cognition increases"</span>,</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">"x"</span>,</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">rhs =</span> <span class="fu">bernoulli</span>(theta),</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">obs =</span> <span class="cn">TRUE</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">|&gt;</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">descr =</span> <span class="st">"Success probability"</span>,</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">"theta"</span>,</span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">child =</span> <span class="st">"x"</span>,</span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">rhs =</span> <span class="fu">uniform</span>(<span class="dv">0</span>,<span class="dv">1</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="grViz html-widget html-fill-item" id="htmlwidget-169abb3486349adfa5d8" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-169abb3486349adfa5d8">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\n  \"1\" [label = \"Cognition increases\nx ~ bernoulli(theta)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"2\" [label = \"Success probability\ntheta ~ uniform(0,1)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n\"2\"->\"1\" [style = \"solid\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dag_create</span>() <span class="sc">|&gt;</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">descr =</span> <span class="st">"Cognition increases"</span>,</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">"x"</span>,</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">rhs =</span> <span class="fu">bernoulli</span>(theta),</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">obs =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_plate</span>(</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">descr =</span> <span class="st">"Observation"</span>,</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">"i"</span>,</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">nodeLabels =</span> <span class="st">"x"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(</span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">descr =</span> <span class="st">"Success probability"</span>,</span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">"theta"</span>,</span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">child =</span> <span class="st">"x"</span>,</span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">rhs =</span> <span class="fu">uniform</span>(<span class="dv">0</span>,<span class="dv">1</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="grViz html-widget html-fill-item" id="htmlwidget-21dc44474b3e8cd160f8" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-21dc44474b3e8cd160f8">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\n  \"2\" [label = \"Success probability\ntheta ~ uniform(0,1)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \nsubgraph cluster2{\nlabel=\"Observation i\"\n  \"1\" [label = \"Cognition increases\nx ~ bernoulli(theta)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] }\n\n\"2\"->\"1\" [style = \"solid\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<p>In the generative DAG above, there are some additional elements. <em>Observed</em> data - in contrast to latent parameters/variables or unobserved data - gets represented by using fill shading of the ovals (e.g.&nbsp;the darker fill of <em>Cognition increases</em>). Also, rectangles called <em>plates</em> are used to indicate repetition of the enclosed random variable (or group/subgraph of random variables). In this case, the plate indicates we have observed multiple [modeled as independent in the corresponding statistical model] outcomes/realizations of <span class="math inline">\(x\)</span> from treating more than one patient with the drug.</p>
+<p>Text in the lower right-hand corner of the plate indicates how variables inside the plate are repeated and indexed. In this case, there will be one realization of <span class="math inline">\(x\)</span> for each observation. The letter <span class="math inline">\(i\)</span> represents a short-hand label used to index the observations. For example, <code>x[i]</code> is the <span class="math inline">\(i^{\text{th}}\)</span> observation of <code>x</code> and therefore, <code>x[2]</code> would the <span class="math inline">\(2^{\text{nd}}\)</span> observation of <code>x</code>. The <code>[3]</code> in the lower-right hand corner represents the number of repetitions of the RV, in this case there are 3 observations of stores: <code>x[1]</code>, <code>x[2]</code>, and <code>x[3]</code>.</p>
+<p>Since the <span class="math inline">\(\theta\)</span> node lacks a plate, the generative recipe implied by this generative DAG calls for just one realization of <span class="math inline">\(\theta\)</span> to be used in generating all 3 observations of <span class="math inline">\(x\)</span>. In other words, our recipe assumes there is just one “true” <span class="math inline">\(\theta\)</span> value and all observations are Bernoulli trials with the same <span class="math inline">\(\theta\)</span> value. The question we will soon answer computationally is “how to reallocate our plausibility among all possible”true” values of <span class="math inline">\(\theta\)</span> given that we have observed 3 observations of <span class="math inline">\(x\)</span>?”</p>
+<p>More rigorous mathematical notation and definitions can be found in the lucid recommendations of Michael Betancourt. See his work <em>Towards a Principled Bayesian Workflow (Rstan)</em> for a more in-depth treatment of how generative models and prior distributions are only models of real-world processes. <a href="https://betanalpha.github.io/assets/case_studies/principled_bayesian_workflow.html" class="uri">https://betanalpha.github.io/assets/case_studies/principled_bayesian_workflow.html</a>. Additionally, Betancourt’s <em>Generative Modelling</em> (<a href="https://betanalpha.github.io/assets/case_studies/generative_modeling.html" class="uri">https://betanalpha.github.io/assets/case_studies/generative_modeling.html</a>) is excellent in explaining how models with narrative interpretations tell a set of stories on how data are generated. For us, we will combine our generative DAGs with observed data to refine our beliefs about which stories (i.e.&nbsp;which parameters) seem more plausible than others.</p>
+</section>
+</section>
+<section id="computational-bayesian-inference-workflows" class="level2">
+<h2 class="anchored" data-anchor-id="computational-bayesian-inference-workflows">Computational Bayesian inference workflows</h2>
+<p>This section illustrates how to use the <code>causact</code> package to specify and run computational Bayesian inference workflows. The package is an easy-to-use, intuitive, and visual interface to <code>numpyro</code>. In fact, it automates the creation of <code>numpyro</code> code based on a user creating a generative DAG. <code>causact</code> advocates and enables generative DAGs to serve as a business analytics workflow (BAW) platform upon which to launch business discussions, create statistical models, and automate computational Bayesian inference.</p>
+<section id="getting-started-with-dag_foo-functions" class="level3">
+<h3 class="anchored" data-anchor-id="getting-started-with-dag_foo-functions">Getting started with <code>dag_foo()</code> functions</h3>
+<p>In the code below, the two lines beginning with <code>dag_</code> output R list objects consisting of six data frames. Let’s not worry too much about the details, but notice that one of the data frames is for storing node information (i.e.&nbsp;<code>nodesDF</code>) and one for edge information (i.e.&nbsp;<code>edgesDF</code>).</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="do">## returns a list of data frames to store DAG info</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="fu">dag_create</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$nodes_df
+ [1] id         label      descr      data       rhs        child     
+ [7] obs        rhsID      distr      auto_label auto_descr auto_data 
+[13] dimID      auto_rhs  
+&lt;0 rows&gt; (or 0-length row.names)
+
+$edges_df
+[1] id   from to   type
+&lt;0 rows&gt; (or 0-length row.names)
+
+$arg_df
+[1] rhsID        argName      argType      argValue     argDimLabels
+&lt;0 rows&gt; (or 0-length row.names)
+
+$plate_index_df
+[1] indexID          indexLabel       indexDescription indexDisplayName
+[5] dataNode         rhs             
+&lt;0 rows&gt; (or 0-length row.names)
+
+$plate_node_df
+[1] indexID nodeID 
+&lt;0 rows&gt; (or 0-length row.names)
+
+$dim_df
+[1] dimID         nodeID        dimType       dimDataSource dimValue     
+&lt;0 rows&gt; (or 0-length row.names)
+
+attr(,"class")
+[1] "causact_graph"</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="do">## adds a node to the list with given description</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="fu">dag_create</span>() <span class="sc">%&gt;%</span> <span class="fu">dag_node</span>(<span class="st">"BernoulliRV"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$nodes_df
+  id label       descr data  rhs child   obs rhsID distr auto_label  auto_descr
+1  1  &lt;NA&gt; BernoulliRV &lt;NA&gt; &lt;NA&gt;    NA FALSE    NA FALSE       BrRV BernoulliRV
+  auto_data dimID auto_rhs   dec   det
+1      &lt;NA&gt;    NA     &lt;NA&gt; FALSE FALSE
+
+$edges_df
+[1] id   from to   type
+&lt;0 rows&gt; (or 0-length row.names)
+
+$arg_df
+[1] rhsID        argName      argType      argValue     argDimLabels
+&lt;0 rows&gt; (or 0-length row.names)
+
+$plate_index_df
+[1] indexID          indexLabel       indexDescription indexDisplayName
+[5] dataNode         rhs             
+&lt;0 rows&gt; (or 0-length row.names)
+
+$plate_node_df
+[1] indexID nodeID 
+&lt;0 rows&gt; (or 0-length row.names)
+
+$dim_df
+[1] dimID         nodeID        dimType       dimDataSource dimValue     
+&lt;0 rows&gt; (or 0-length row.names)
+
+attr(,"class")
+[1] "causact_graph"</code></pre>
+</div>
+</div>
+<p>The function dag_create() is used to create an empty list object that we will refer to as a <em>causact_graph</em>. Subsequently functions like <code>dag_node()</code> and <code>dag_edge()</code> will take a <em>causact_graph</em> object as input, modify them, and provide a <em>causact_graph</em> object as output. This feature allows for the chaining (i.e.&nbsp;using <code>%&gt;%</code>) of these functions to build up your observational model. Once done building with <code>dag_create()</code>, <code>dag_node()</code>, and <code>dag_edge()</code>, a call to the <code>dag_render()</code> function outputs a visual depiction of your <em>causact graph</em>.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dag_create</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"BernoulliRV"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_render</span>()   <span class="do">## visualize graph</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="grViz html-widget html-fill-item" id="htmlwidget-5a982514ce28ae593bde" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-5a982514ce28ae593bde">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\n  \"1\" [label = \"BernoulliRV\nBrRV\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+</section>
+<section id="four-steps-to-creating-graphical-models" class="level3">
+<h3 class="anchored" data-anchor-id="four-steps-to-creating-graphical-models">Four steps to creating graphical models</h3>
+<p>Let’s use the <code>dag_foo()</code> functions to make a generative DAG with Bernoulli data, a uniform prior, and some observed data:</p>
+<p><span class="math display">\[
+\begin{aligned}X &amp;\sim \textrm{Bernoulli}(\theta) \\\theta &amp;\sim \textrm{uniform}(0,1)\end{aligned}
+\]</span></p>
+<p>Assume two successes and one failure such that:</p>
+<p><span class="math display">\[
+x_1 = 1, x_2 = 1, x_3 = 0
+\]</span></p>
+<p>The following code uses the <code>descr</code> and <code>label</code> arguments of the <code>dag_node()</code> function to, respectively, provide a long label for your random variable that is easily understood by business stakeholders and a short label that is more for notational/mathematical convenience:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dag_create</span>() <span class="sc">%&gt;%</span>  <span class="co"># just get one node to show</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="at">descr =</span> <span class="st">"Cognition increases"</span>, <span class="at">label =</span> <span class="st">"x"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="grViz html-widget html-fill-item" id="htmlwidget-0f735d05eac75555269e" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-0f735d05eac75555269e">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\n  \"1\" [label = \"Cognition increases\nx\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<p>Since, we actually observe this node as data, we use the <code>data</code> argument of the <code>dag_node()</code> function to specify the observed values:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dag_create</span>() <span class="sc">%&gt;%</span>  <span class="co"># make it an observed node by adding data</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="at">descr =</span> <span class="st">"Cognition increases"</span>, <span class="at">label =</span> <span class="st">"x"</span>, </span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="grViz html-widget html-fill-item" id="htmlwidget-efd07531f021030c44f5" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-efd07531f021030c44f5">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\n  \"1\" [label = \"Cognition increases [3]\nx\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<p>The node’s darker fill is automated because of the supplied observed data and the <code>[3]</code> means there are three observed realizations in the supplied data vector. You could also use a plate to represent the multiple realizations, but I recommend plate creation to be the last step in creating generative DAGs via the <code>causact</code> package.</p>
+<p>One goal we often have is to take a sample of data and find plausible parameters within a distribution family (e.g.&nbsp;normal, gamma, etc.) governing how that data might have been generated - at its core, Bayesian inference is a search for plausible parameters of a specified generative DAG. To specify the distribution family governing the observed data, use the <code>rhs</code> argument of the <code>dag_node()</code> function.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><code>rhs</code> stands for right-hand side. The <code>rhs</code> of a node is reserved for indicating how the node is generated as a function of its parent nodes’ values. Alternatively, when not used as a distribution specification, the <code>rhs</code> is an algebraic expression or other function of data converting parent node values into a realization of the node’s value.</p>
+</div>
+</div>
+<p>There is an implicit assumption that all unknown variables will eventually be defined by parent nodes - the <code>causact</code> package will not check for this. In the case below, we are specifying a parameter <code>theta</code> that will need to eventually be added as a parent node.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dag_create</span>() <span class="sc">%&gt;%</span>  <span class="co"># specify data generating distribution</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="at">descr =</span> <span class="st">"Cognition increases"</span>, <span class="at">label =</span> <span class="st">"x"</span>, </span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">bernoulli</span>(theta),  <span class="do">##add distribution </span></span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="grViz html-widget html-fill-item" id="htmlwidget-7ef2983315589fed18d6" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-7ef2983315589fed18d6">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\n  \"1\" [label = \"Cognition increases [3]\nx ~ bernoulli(theta)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<p>Note, a random variable’s distribution must be part of <code>causact</code>. The full list of <code>causact</code> distributions can be found by running the following line:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>?causact<span class="sc">::</span>distributions</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>For each unknown argument remaining on the <code>rhs</code> of any nodes in your causact graph, one must eventually All unknown rhs arguments for nodes must be defined prior to running any Bayesain computations.define how the unknown argument can be generated. In our data node above, the only unknown argument on the <code>rhs</code> is <code>theta</code>. We define the generative model for <code>theta</code> by making an additional node representing its value:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dag_create</span>() <span class="sc">%&gt;%</span>  </span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="at">descr =</span> <span class="st">"Cognition increases"</span>, </span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>           <span class="at">label =</span> <span class="st">"x"</span>,</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">bernoulli</span>(theta), <span class="co"># no quotation marks</span></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="at">descr =</span> <span class="st">"Success probability"</span>, </span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">label =</span> <span class="st">"theta"</span>,  <span class="co"># labels needs quotes</span></span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">uniform</span>(<span class="dv">0</span>,<span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="grViz html-widget html-fill-item" id="htmlwidget-22a76f1d8b9e786d9d3f" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-22a76f1d8b9e786d9d3f">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\n  \"1\" [label = \"Cognition increases [3]\nx ~ bernoulli(theta)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"2\" [label = \"Success probability\ntheta ~ uniform(0,1)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<p>Notice, the parameters of the <code>rhs</code> distribution for <code>theta</code> are not unknown - they are actually constants (i.e.&nbsp;0 and 1) and hence, no additional parent nodes are required to be created. Take note that <code>theta</code> on the <code>rhs</code> for the <em>Cognition increases</em> node does not require quotes as it refers to an R object; specifically, this refers to the R object created by:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dag_node</span>(<span class="at">descr =</span> <span class="st">"Success probability"</span>, </span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>         <span class="at">label =</span> <span class="st">"theta"</span>,  <span class="co"># label needs quotes</span></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>         <span class="at">rhs =</span> <span class="fu">uniform</span>(<span class="dv">0</span>,<span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>where the <code>theta</code> object is given its name by the <code>label = "theta"</code> argument; when creating node labels via this argument, quotes are typically required.</p>
+<p>Without a link between <code>theta</code> and <code>x</code>, one is not creating a properly factorizable directed acyclic graph as is required for specifying a joint distribution. Using the <code>child</code> argument of <code>dag_node</code>, one can now create the required link between <code>theta</code> as a parent node and <code>theta</code> as an argument to the distribution of its child node <code>x</code>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dag_create</span>() <span class="sc">%&gt;%</span>  <span class="co"># connect parent to child</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="at">descr =</span> <span class="st">"Cognition increases"</span>, <span class="at">label =</span> <span class="st">"x"</span>,</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">bernoulli</span>(theta),</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="at">descr =</span> <span class="st">"Success probability"</span>, <span class="at">label =</span> <span class="st">"theta"</span>,</span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">uniform</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"x"</span>) <span class="sc">%&gt;%</span>  <span class="do">## ADDED LINE TO CREATE EDGE</span></span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="grViz html-widget html-fill-item" id="htmlwidget-e28ddcdfc64296f5794e" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-e28ddcdfc64296f5794e">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\n  \"1\" [label = \"Cognition increases [3]\nx ~ bernoulli(theta)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"2\" [label = \"Success probability\ntheta ~ uniform(0,1)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n\"2\"->\"1\" [style = \"solid\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>When using the child argument, please ensure the child was previously defined as a node. Generative DAGs are designed to be built from bottom-to-top reflecting the way a business analyst would create these DAGs. Note that computer code for Bayesian inference, like numpyro code, requires the exact opposite order - parent nodes get defined prior to their children. One way the causact package accelerates the BAW is by facilitating a bottom-up workflow that can be automatically translated to top-down computer code.</p>
+</div>
+</div>
+<p>For more complicated modelling, repeat this process of adding parent nodes until there are no uncertain parameters on the right hand side of the top nodes.</p>
+</section>
+<section id="running-bayesian-inference-on-a-generative-dag" class="level3">
+<h3 class="anchored" data-anchor-id="running-bayesian-inference-on-a-generative-dag">Running Bayesian inference on a generative DAG</h3>
+<p>Now we use <code>dag_numpyro()</code> function to get a posterior distribution based solely on the <code>causact_graph</code> that we just made. A call to <code>dag_numpyro()</code> expects a <code>causact_graph</code> as the first argument, so make sure you are not passing the output of the <code>dag_render()</code> function by mistake. Use <code>dag_render()</code> to get a picture and <code>dag_numpyro()</code> for Bayesian inference - just do not mix them in the same chain of functions. The second argument of <code>dag_numpyro()</code> is the <code>mcmc</code> argument and its default value is <code>TRUE</code>. When <code>mcmc = FALSE</code>, <code>dag_numpyro(mcmc = FALSE)</code> gives a print-out of the <code>numpyro</code> code that would be run by <code>causact</code> to get a posterior without running the code. You can cut and paste this code into a new R-script if you wish and run it there (ESPECIALLY USEFUL FOR DEBUGGING WHEN YOU GET AN ERROR AT THIS STAGE). Alternatively and preferably, the <code>numpyro</code> code should run automatically in the background by setting <code>mcmc = TRUE</code> or simply omitting this argument because it is the default value. Usage is shown below:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># running Bayesian inference</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a><span class="co"># remove dag_render() and save graph object</span></span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>graph <span class="ot">=</span> <span class="fu">dag_create</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="at">descr =</span> <span class="st">"Cognition increases"</span>, </span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>           <span class="at">label =</span> <span class="st">"x"</span>,</span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">bernoulli</span>(theta),</span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="at">descr =</span> <span class="st">"Success probability"</span>, </span>
+<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a>           <span class="at">label =</span> <span class="st">"theta"</span>,</span>
+<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">uniform</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb40-11"><a href="#cb40-11" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"x"</span>)</span>
+<span id="cb40-12"><a href="#cb40-12" aria-hidden="true" tabindex="-1"></a><span class="co"># pass graph to dag_numpyro</span></span>
+<span id="cb40-13"><a href="#cb40-13" aria-hidden="true" tabindex="-1"></a>draws <span class="ot">=</span> graph <span class="sc">%&gt;%</span> <span class="fu">dag_numpyro</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>After some time, during which <code>numpyro</code> computes our posterior Bayesian distribution, we get that distribution as representative sample in an object I typically name <code>draws</code> - a data frame of posterior draws that is now useful for computation and plotting. For a quick visual-check that all went well, pass the <code>draws</code> data frame to the <code>dagp_plot()</code> function to get a quick look at the credible (posterior) values of <code>theta</code>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>draws <span class="sc">%&gt;%</span> <span class="fu">dagp_plot</span>()  <span class="co"># eyeball P(theta&gt;0.65)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-29-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>the lighter fill indicates a 90% percentile interval where 5% of plausible values are excluded from the left- and right-sides of the colored interval. Consider this range your credilble values for <code>theta</code>; hence, our posterior belief is that <code>theta</code> is somewhere in the 27% to 90% range. The darker fill within the colored interval indicates a 10% percentile interval; hence, the most likely values of <code>theta</code> are centered around 60%. For more customized graphs, please use <code>bayesplot</code> or <code>ggplot2</code> with <code>ggdist</code> with <code>draws</code> as the input data.</p>
+</section>
+<section id="investigating-the-posterior-distribution" class="level3">
+<h3 class="anchored" data-anchor-id="investigating-the-posterior-distribution">Investigating the posterior distribution</h3>
+<p>The object we named <code>draws</code> is our posterior distribution after <code>numpyro</code> automated Bayes rule for us. The posterior distribution is expressed as a representative sample of all unobserved nodes/parameters; it is not a named probability distribution. Each row of <code>draws</code> is a single individual sample or realization of the posterior distribution. Each row is referred to as a <strong>draw</strong> from the posterior.</p>
+<p>To see a representative sample of the posterior distribution, we access the R object, <code>draws</code>, created above. The <code>theta</code> column of <code>draws</code> contains our representative sample of the posterior distribution. In this case, that representative sample includes 4,000 samples of <code>theta</code>. Recall that our prior belief about <code>theta</code>, the probability of success, was uniformly distributed between 0 and 1 - all values equally likely. Now, after observing 2 successes and 1 failure, our plausibility beliefs should favor <span class="math inline">\(\theta\)</span> values away from 0 and 1 and more towards middle values as we learned both success and failure are possible; but we let Bayes rule (via <code>numpyro</code>) do this plausibility updating for us.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(draws)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="kable-table">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;">theta</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0.3855</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.5282</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.4598</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.4707</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.4707</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.8929</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<p>Using <code>bayesplot</code>, we can visualize how plausibility was reallocated from our uniform prior of <span class="math inline">\(\theta\)</span> in light of the observed data; in other words, we can see the posterior distribution for <span class="math inline">\(\theta\)</span> after observing 2 out of 3 stores increase sales:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_areas</span>(draws)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-31-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Notice how values of <span class="math inline">\(\theta\)</span> are no longer uniformly distributed; values from 50% to 75% are represented more frequently.</p>
+<p>Some other takeaways from the plot regarding plausibility reallocation:</p>
+<ul>
+<li><p>Low values of <span class="math inline">\(\theta\)</span> are now deemed less plausible; two out of three successes is simply inconsistent with low values of <span class="math inline">\(\theta\)</span>.</p></li>
+<li><p>Very high values of <span class="math inline">\(\theta\)</span> are less plausbile; one failure in three tries is not likely to occur if <span class="math inline">\(\theta\)</span> were to be super-high.</p></li>
+<li><p>Our best guess of <span class="math inline">\(\theta\)</span> went from 0.5 (i.e.&nbsp;the mean of theta when uniformly distributed) to <code>mean(draws$theta) =</code> 0.60.</p></li>
+<li><p>We are still very unsure about the “true” value of <span class="math inline">\(\theta\)</span> after only 3 observations. We can see this by looking at quantiles of the posterior distribution suggesting a 90% percentile interval from 0.25 to 0.91:</p></li>
+</ul>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summarize_draws</span>(draws)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="kable-table">
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 12%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 6%">
+<col style="width: 12%">
+<col style="width: 12%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">variable</th>
+<th style="text-align: right;">mean</th>
+<th style="text-align: right;">median</th>
+<th style="text-align: right;">sd</th>
+<th style="text-align: right;">mad</th>
+<th style="text-align: right;">q5</th>
+<th style="text-align: right;">q95</th>
+<th style="text-align: right;">rhat</th>
+<th style="text-align: right;">ess_bulk</th>
+<th style="text-align: right;">ess_tail</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">theta</td>
+<td style="text-align: right;">0.6064</td>
+<td style="text-align: right;">0.6213</td>
+<td style="text-align: right;">0.2002</td>
+<td style="text-align: right;">0.2194</td>
+<td style="text-align: right;">0.2503</td>
+<td style="text-align: right;">0.9109</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1520</td>
+<td style="text-align: right;">1964</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<p>This continued large band of uncertainty is a good thing. We only have three data points, we should not be very confident in our point estimate of <span class="math inline">\(\theta\)</span>. If we want a tighter interval of uncertainty, then we simply need to get more data.</p>
+</section>
+<section id="making-probabilistic-statements-with-indicator-functions" class="level3">
+<h3 class="anchored" data-anchor-id="making-probabilistic-statements-with-indicator-functions">Making probabilistic statements with indicator functions</h3>
+<p>With a representative sample of the posterior joint distribution available to us, namely <code>draws</code>, we can expand on the strategies of the “Joint Distributions Tell Us Everything” section to make probabilistic statements from representative samples. For example, we might be curious to know <span class="math inline">\(P(\theta \gt 50\%)\)</span>. Using indicator functions, simple functions that equal 1 when a criteria is met and 0 when it is not, we can get our estimate of <span class="math inline">\(P(\theta \gt 50\%)\)</span>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="do">## estimate posterior probability that theta &gt; 50%</span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>draws <span class="sc">%&gt;%</span></span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">indicatorFlag =</span> </span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>           <span class="fu">ifelse</span>(theta <span class="sc">&gt;</span> <span class="fl">0.5</span>, <span class="cn">TRUE</span>, <span class="cn">FALSE</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">pctOfThetaVals =</span> <span class="fu">mean</span>(indicatorFlag))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="kable-table">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;">pctOfThetaVals</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0.7032</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<p>We would then state that “the probability that <span class="math inline">\(\theta\)</span> is greater than 50% is approximately 0.70”.</p>
+<p>Similarly, we can answer more complicated queries. For example, what is the <span class="math inline">\(P(40\% \lt \theta \lt 50\%)\)</span>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="do">## estimate posterior probability that 40% &lt; theta &lt; 60%</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>draws <span class="sc">%&gt;%</span></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">indicatorFlag =</span> </span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>           <span class="fu">ifelse</span>(theta <span class="sc">&gt;</span> <span class="fl">0.4</span> <span class="sc">&amp;</span> theta <span class="sc">&lt;</span> <span class="fl">0.6</span>, </span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>                  <span class="cn">TRUE</span>, <span class="cn">FALSE</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">pctOfThetaVals =</span> <span class="fu">mean</span>(indicatorFlag))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="kable-table">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;">pctOfThetaVals</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0.292</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<p><strong>The power of this workflow cannot be overstated</strong> and you will use it frequently for making probabilistic statements. Statements that will come in handy when it is time to use data to inform decision making under uncertainty.</p>
+<p>A more descriptive output, possibly used for plotting purposes, is shown here:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>draws <span class="sc">%&gt;%</span></span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">indicatorFlag =</span> </span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>           <span class="fu">ifelse</span>(theta <span class="sc">&gt;</span> <span class="fl">0.5</span>,</span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>                  <span class="st">"theta &gt; 0.5"</span>,</span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a>                  <span class="st">"theta &lt;= 0.5"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(indicatorFlag) <span class="sc">%&gt;%</span></span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">countInstances =</span> <span class="fu">n</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">percentageOfInstances =</span> </span>
+<span id="cb47-9"><a href="#cb47-9" aria-hidden="true" tabindex="-1"></a>           countInstances <span class="sc">/</span> <span class="fu">sum</span>(countInstances))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="kable-table">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;">indicatorFlag</th>
+<th style="text-align: right;">countInstances</th>
+<th style="text-align: right;">percentageOfInstances</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">theta &lt;= 0.5</td>
+<td style="text-align: right;">1187</td>
+<td style="text-align: right;">0.2968</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">theta &gt; 0.5</td>
+<td style="text-align: right;">2813</td>
+<td style="text-align: right;">0.7032</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<p>Why does this work? Let’s delve into the math for a moment just to see why.</p>
+<p>An indicator function, denoted <span class="math inline">\(1_A\)</span> maps all values of a representative sample <span class="math inline">\(X\)</span> to either 0 or 1 depending on whether the values satisfy criteria to be in some set we label as <span class="math inline">\(A\)</span>. For example, assume <span class="math inline">\(A = \{x \ge 0.5\}\)</span> is math set notation for all values in representative sample <span class="math inline">\(X\)</span> such that the draw satisfies <span class="math inline">\(x \ge 0.5\)</span>. Then, the formal definition of an indicator function, denoted <span class="math inline">\(1_A\)</span>, maps elements in <span class="math inline">\(X\)</span> to either 0 or 1 depending on whether they are in <span class="math inline">\(A\)</span>:</p>
+<p><span class="math display">\[
+1_{A} \equiv\begin{cases}  1, &amp; \textrm{if } x \in A\\  0, &amp; \textrm{if } x \notin A\end{cases}
+\]</span></p>
+<p>Now, for the key math trick, known as the <em>fundamental bridge</em>. The probability of an event is the expected value (i.e.&nbsp;mean) of its indicator random variable. Mathematically,</p>
+<p><span class="math display">\[
+P(A) = \mathbb{E}[1_{A}]
+\]</span></p>
+<p>which is true since <span class="math inline">\(\mathbb{E}[1_{A}] = 1 \times P(A) + 0 \times P(\bar{A}) = P(A)\)</span> where <span class="math inline">\(\bar A\)</span> denotes not in set <span class="math inline">\(A\)</span>. So, using this formula we can make probabilistic statements about a realization <span class="math inline">\(x\)</span> meeting the criteria to be in set <span class="math inline">\(A\)</span>. Assuming <span class="math inline">\(J\)</span> draws in our data frame, each draw labelled <span class="math inline">\(j\)</span>, then we estimate <span class="math inline">\(P(A)\)</span> by taking the average value of an indicator function over the <span class="math inline">\(J\)</span> draws:</p>
+<p><span class="math display">\[
+P(A) = \mathbb{E}[1_{A}] \approx \frac{1}{J} \sum_{j=1}^J 1_{x_j \in A}
+\]</span></p>
+<p>And despite the heavy math notation, your intuition can guide you in applying this formula. For example, imagine we have a representative sample of <span class="math inline">\(X = [1,4,3,2,5]\)</span> and we want to estimate <span class="math inline">\(P(X \ge 3)\)</span>. You could answer this just by looking and say <span class="math inline">\(\frac{3}{5}\)</span> or 3 out of 5 chances for <span class="math inline">\(x \ge 3\)</span>. Applying the formula, which we could easily do with code, is shown mathematically here:</p>
+<p><span class="math display">\[
+P(x \geq 3) = \mathbb{E}[1_{x \geq 3}] \approx \frac{1}{5} \sum_{j=1}^5 1_{x_j \geq 3} = \frac{1}{5} \times (0+1+1+0+1) = \frac{3}{5} = 0.6
+\]</span></p>
+<p>We have a probabilistic statement: “the probability that <span class="math inline">\(x\)</span> is greater than or equal to 3 is 0.6”.</p>
+</section>
+<section id="credit-card-example" class="level3">
+<h3 class="anchored" data-anchor-id="credit-card-example">Credit card example</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>graph <span class="ot">=</span> <span class="fu">dag_create</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Get Card"</span>,<span class="st">"x"</span>,</span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">bernoulli</span>(theta),</span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> carModelDF<span class="sc">$</span>getCard) <span class="sc">%&gt;%</span></span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Signup Probability"</span>,<span class="st">"theta"</span>,</span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">uniform</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"x"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_plate</span>(<span class="st">"Car Model"</span>, <span class="st">"y"</span>,  </span>
+<span id="cb48-9"><a href="#cb48-9" aria-hidden="true" tabindex="-1"></a>            <span class="at">data =</span> carModelDF<span class="sc">$</span>carModel,  </span>
+<span id="cb48-10"><a href="#cb48-10" aria-hidden="true" tabindex="-1"></a>            <span class="at">nodeLabels =</span> <span class="st">"theta"</span>, </span>
+<span id="cb48-11"><a href="#cb48-11" aria-hidden="true" tabindex="-1"></a>            <span class="at">addDataNode =</span> <span class="cn">TRUE</span>)  <span class="sc">%&gt;%</span></span>
+<span id="cb48-12"><a href="#cb48-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_plate</span>(<span class="st">"Observations"</span>, <span class="st">"i"</span>,</span>
+<span id="cb48-13"><a href="#cb48-13" aria-hidden="true" tabindex="-1"></a>            <span class="at">nodeLabels =</span> <span class="fu">c</span>(<span class="st">"x"</span>,<span class="st">"y"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>graph <span class="sc">%&gt;%</span> <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="grViz html-widget html-fill-item" id="htmlwidget-54a4873249b169eb6149" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-54a4873249b169eb6149">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\nsubgraph cluster1{\nlabel=\"Car Model y [4]\"\n  \"2\" [label = \"Signup Probability\ntheta ~ uniform(0,1)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] }\n\nsubgraph cluster2{\nlabel=\"Observations i [1000]\"\n  \"1\" [label = \"Get Card\nx ~ bernoulli(theta[y])\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"3\" [label = \"Car Model\ny\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] }\n\n\"2\"->\"1\" [style = \"dashed\"] \n\"3\"->\"1\" [style = \"solid\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>draws <span class="ot">=</span> graph <span class="sc">%&gt;%</span> <span class="fu">dag_numpyro</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>draws <span class="sc">%&gt;%</span> <span class="fu">dagp_plot</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-39-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
 </section>
 </section>
 
