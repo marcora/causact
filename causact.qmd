@@ -83,6 +83,9 @@ With all of this background, we are now equipped to model uncertainty in any obs
 #| output: false
 library(tidyverse)
 library(ggformula)
+library(mosaic)
+library(posterior)
+library(bayesplot)
 library(causact) # causact::install_causact_deps()
 
 theme_set(theme_minimal())
@@ -250,4 +253,251 @@ If there are no edges between $X$ and $Y$, then the joint distribution is recove
 
 The general rule for a probabilistic graphical model is that its joint distribution can be factored using the chain rule formula for DAGs where $P(X_1, X_2, \ldots, X_n) = \prod_I P(X_i|Parents(X_i))$. Hence, to model any one random variable, we only have to model its relationship to its parents instead of modelling its relationship to all of the random variables included in the model.
 
-See mathematicalmonk’s youtube video on how joint distributions are compactly represented using DAGs here: <https://youtu.be/3XysEf3IQN4>.
+See [mathematicalmonk](www.youtube.com/@mathematicalmonk)’s youtube video on how joint distributions are compactly represented using DAGs here: <https://youtu.be/3XysEf3IQN4>.
+
+## Bayesian inference on graphical models
+
+*Plausible reasoning* - an allocation of credibility/plausibility to all possible explanations of the observations.
+
+Plausible reasoning in the math world is called Bayesian inference - a methodology for updating the credibility/plausibility of the various explanations in our mathematical representation of the world as more data becomes available.
+
+Let’s walk through a hypothetical argument between two scientists as to the effect of a new drug on cognition in Alzheimer's disease (AD).
+
+Assume the two scientists have competing models for what effect the drug will have on the cognition of patients with AD:
+
+1.  *The Optimist Model (Model1)* : This model is from a scientist who is very optimistic about the effect of the drug and argues that 70% of all patients will see at least a 5% increase in cognition.
+
+2.  *The Pessimist Model (Model2)* : This model is from a scientist who is very pessimistic about the effect of the drug and argues that 20% of all patients will see at least a 5% increase in cognition.
+
+These two scientists recognize and respect their differing opinions - they agree to test the new drug in one patient. They hire you as a data analyst and ask you to make the decision as to whose model is more credible in light of the test’s results. Your job is to allocate credibility to the two competing models both before seeing the test results and after seeing the test results. Initially, you might not have any reason to favor one model over another, but as data is collected, your belief in whose model is more plausible/believable/credible will change. For example, if cognition decreases, then the pessimist model would seem more credible. Your task is to allocate credibility (using probability theory) to the various models/explanations, before and after the data becomes available.
+
+### Building a graphical model of the real-world
+
+The first step is to create a graphical model/representation of the real world.
+
+Starting simple, *let’s only imagine that we test the drug in one patient* and our single data point (i.e. whether cognition increases by at least 5% or not) follows a Bernoulli distribution.
+
+The graphical model is simply:
+
+```{r}
+dag_create() |>
+  dag_node(
+    descr = "Cognition increases",
+    label = "X") |>
+  dag_render(shortLabel = TRUE)
+```
+
+And, the statistical model with the mathematical details is represented like this:
+
+$$
+\begin{aligned}X \equiv& \textrm{ Cognition increases: } \\        & \textrm{ If cognition increases more than 5}\% \textrm{, then }X=1 \textrm{ otherwise, }X=0.\\X \sim  & \textrm{ Bernoulli}(\theta)\\\end{aligned}
+$$
+
+We have seen this model before when representing coin flips. Our data is analogous to heads or tails of a coin flip. The data will be reduced to a zero or one for each patient. If given $\theta$, we could generate data using `rbern(n=1, prob=theta)`, but, we do not know $\theta$; the reason we are looking at data is to answer the question: “what is $\theta$?”
+
+From the story above, $\theta$ can only take on two values. In the optimistic model $\theta = 70\%$ and in the pessimistic model $\theta = 20\%$. So, we have two models of the world and are uncertain as to which one is more plausible. Without data, we have no reason to believe one scientist over another, so $P(\theta=70\%)=50\%$ and $P(\theta=20\%)=50\%$ - i.e. each scientist is equally likely to be correct. This is just like saying $P(\text{model1})=P(\text{model2})=50\%$. Before any data is considered, this allocation of credibility assigning probability to all the models being considered is called the *prior*. The prior is the initial probability allocated among all the possible models.
+
+See <https://youtu.be/nCRTuwCdmP0> for gaining some intuition about prior probabilities.
+
+So now, we can more completely specify our data story using both a graphical and a statistical model with specified prior probabilities. The graphical model is now two ovals representing our uncertainty in the probability of success and the observed cognition increase (random variable math-labels for $\Theta$ and $X$ are included for extra clarity in connecting the graphical model and the statistical model):
+
+```{r}
+dag_create() |>
+  dag_node(
+    descr = "Cognition increases",
+    label = "X") |>
+  dag_node(
+    descr = "Success probability",
+    label = "Θ",
+    child = "X") |>
+  dag_render()
+```
+
+And, the statistical model is represented like this:
+
+$$
+\begin{aligned}
+X \equiv& \textrm{ Cognition increases: } \\
+        & \textrm{ If cognition increases more than 5} \% \textrm{, then }X=1 \textrm{ otherwise, }X=0.\\
+X \sim  & \textrm{ Bernoulli}(\theta)\\
+\Theta \equiv& \textrm{ Success probability: } \\
+\end{aligned}
+$$ $$
+\Theta \sim
+\begin{array}{ccc}
+  \textrm{Outcome } & \textrm{ Realization }(\theta) & f(\theta) \\
+  \hline
+  \textrm{Model1}  & \textrm{   70}\% & \textrm{  50}\% \\
+  \textrm{Model2}  & \textrm{   20}\% & \textrm{  50}\% \\
+\end{array}
+$$
+
+where the prior probability distribution for $\Theta$ is given in tabular form.
+
+The graphical model and statistical model are two different ways of representing the same story. The graphical model is more visual and intuitive, while the statistical model is more precise and mathematical. Both are useful for different purposes, but both represents a generative model, i.e., a recipe for simulating real-world data observations. In this case, following the top-down flow of the graphical model, the recipe is:
+
+1.  Simulate a potential success probability by randomly picking, with equal probability, either the optimist or pessimist model.
+2.  Simulate a drug’s success by using the probability from (1) and generating a Bernoulli random variable with that probability of success.
+
+We can easily show how to simulate an observation by writing code for the recipe in R:
+
+```{r}
+# Step 1: Simulate a potential success probability
+theta = sample(size = 1, x = c(0.7, 0.2), prob = c(0.5, 0.5))
+# Step 2: Simulate a drug's success
+x = rbern(n = 1, prob = theta)
+theta
+x
+```
+
+Much of your subsequent work will use this notion of generative models as recipes. You will 1) *create generative models* that serve as skeleton recipes - recipes with named probability distributions and **unknown** parameters - for how real-world data arises, and 2) *inform models with data* by reallocating plausibility to the recipe parameters that are most consistent with the data.
+
+A guiding principle for creating good generative models is that the generated data should mimic data that you, as a data analyst, believe is plausible. If the generative model outputs implausible data in high frequency, then your model is not capturing the essence of the underlying data story; your modelling assumptions will need work. When the generative model seems correct in the absence of data, then data can feed the updating process which sensibly reallocates prior probability so that model parameters that tend to generate data similar to the observed data are deemed more plausible.
+
+### From model to joint distribution
+
+The graphical model shows that we have uncertainty about two related random variables: 1) *Success Probability* ($\Theta$) *Cognition Increases* ($X$). Our assumption - built into our prior - is that one of our two models, $\theta = 20\%$ or $\theta = 70\%$, is correct.
+
+::: callout-note
+This implicit assumption that one of the considered generative models is correct is sometimes referred to as the *small world* assumption. See this comparison by Richard McElreath of *small world* versus *large world* highlighting the implications of this assumption: <https://youtu.be/WFv2vS8ESkk>.
+:::
+
+We are also confident about what collecting data from one patient might yield: either a single *success* or a single *failure* in terms of the cognition increase. Prior to collecting data, there are four combinations of model and data that are potential truths. Each combination’s prior plausibility, represented by $a\%$, $b\%$, $c\%$ and $d\%$, are elements of the table:
+
+$$
+\begin{array}{cc|cc}         &                  & \textrm{  Possible}                & \textrm{Models  }                  \\         &                  & \theta = 70\% & \theta = 20\% \\         \hline\textrm{Possible} & \textit{Success} & a\%   & b\%                     \\\textrm{Data}     & \textit{Failure} & c\%   & d\%\end{array}
+$$
+
+```{r}
+# Simulate many samples from the generative model
+samples <- map(1:10000, function(x) { theta = sample(size = 1, x = c(0.7, 0.2), prob = c(0.5, 0.5)); x = rbinom(size=1, n=1, prob=theta); tibble(theta, x) }) |> list_rbind()
+
+head(samples)
+```
+
+```{r}
+# Calculate joint probability distribution before seeing the data, and the marginal of theta (prior)
+joint <- samples %>%
+  group_by(theta, x) %>%
+  summarize(count = n(), .groups = "drop") %>%
+  mutate(p = count / sum(count))
+
+joint
+
+joint |> 
+  group_by(theta) |> 
+  summarize(prior = sum(p))
+```
+
+```{r}
+tally(~ x + theta, data = samples, format = 'proportion')
+```
+
+### Bayesian updating of the joint distribution
+
+$$
+P(Model | Data) = \frac{P(Data|Model) \times P(Model)}{P(Data)}
+$$
+
+The above formula is called *Bayes' Theorem* and it is the mathematical engine that drives Bayesian inference. It is a simple formula, but it is very powerful. It tells us how to update our beliefs about the plausibility of various models in light of new data. The formula has four components:
+
+1.  $P(Model | Data)$: This is the *posterior* probability of the model given the data. It is what we are trying to compute. It tells us how plausible each model is after seeing the data.
+2.  $P(Data|Model)$: This is the *likelihood* of the data given the model. It tells us how likely the observed data is under each model.
+3.  $P(Model)$: This is the *prior* probability of the model.
+4.  $P(Data)$: This is the *marginal likelihood* of the data. It is a normalizing constant that ensures the posterior probabilities sum to one.
+
+To use Bayes' Theorem, we need to compute the likelihood of the data under each model. This is done using the probability distributions defined in our statistical model.
+
+Assume we observe a success, i.e. the patient’s cognition increases by at least 5%. The likelihood of this data under each model is:
+
+-   Under Model1 ($\theta = 70\%$): $P(X=1|\theta=70\%) = 0.7$
+-   Under Model2 ($\theta = 20\%$): $P(X=1|\theta=20\%) = 0.2$
+
+The marginal likelihood of the data is computed by summing the likelihoods weighted by the prior probabilities:
+
+$$
+P(Data) = P(X=1) = P(X=1|\theta=70\%) \times P(\theta=70\%) + P(X=1|\theta=20\%) \times P(\theta=20\%) = 0.7 \times 0.5 + 0.2 \times 0.5 = 0.45
+$$ Now, we can plug these values into Bayes' Theorem to compute the posterior probabilities:
+
+-   For Model1 ($\theta = 70\%$):
+
+$$
+P(\theta=70\%|X=1) = \frac{P(X=1|\theta=70\%) \times P(\theta=70\%)}{P(X=1)} = \frac{0.7 \times 0.5}{0.45} \approx 0.778
+$$
+
+-   For Model2 ($\theta = 20\%$):
+
+$$
+P(\theta=20\%|X=1) = \frac{P(X=1|\theta=20\%) \times P(\theta=20\%)}{P(X=1)} = \frac{0.2 \times 0.5}{0.45} \approx 0.222
+$$
+
+So, after observing a success, the posterior probabilities are approximately 77.8% for Model1 and 22.2% for Model2. This means that after seeing the data, we believe that Model1 is more plausible than Model2.
+
+```{r}
+# Calculate joint probability distribution after seeing the data (x=1), and the marginal of theta (posterior)
+joint <- samples %>%
+  filter(x == 1) %>%
+  group_by(theta, x) %>%
+  summarize(count = n(), .groups = "drop") %>%
+  mutate(p = count / sum(count))
+
+joint
+
+joint |> 
+  group_by(theta) |> 
+  summarize(prior = sum(p))
+```
+
+## Generative DAGs and scientific and statistical models
+
+Up to this point, we specified a prior joint distribution using information from both a graphical model and a statistical model. In this section, we combine the two model types, graphical models and statistical models, into one visualization called the generative DAG.
+
+The advantage of this is that the generative DAG unites real-world measurements (e.g. cognition increases) with their math/computation world counterparts (e.g. $X \sim \textrm{Bernoulli}(\theta)$) without requiring the cognitive load of flipping back-and-forth between the graphical and statistical models.
+
+Moreover, generative DAGs, when combined with data, enable Bayesian inference to be automated (yay! no more manual calculations using Bayes rule).
+
+### Generative DAGs
+
+To build a generative DAG, we combine a graphical model with a *statistical model* into a single unifying representation.
+
+::: callout-note
+A statistical model is a mathematically expressed recipe for creating a joint distribution of related random variables. Each variable is defined either using a probability distribution or a function of the other variables. Statistical model and generative DAG will be used interchangeably. The term statistical model is just the mathematically expressed recipe. Generative DAG is the graphically expressed recipe with an embedded statistical model.
+:::
+
+The objective in building generative DAGs is to capture how we might go about simulating real-world measurements using the mathematical language we’ve been learning. Good generative DAGs are recipes for simulating a real-world observation in a way that reflects our domain knowledge. Then, with a generative DAG and some actual data, we will ask the computer to do Bayesian inference for us and to output an updated joint distribution of the random variables in our DAG.
+
+The creation of a generative DAG mimics the creation of graphical models with accompanying statistical models. Both the structure of the DAG and the definition of the random variables should reflect what a domain expert knows, or wants to assume, about the scientific narrative being investigated.
+
+```{r}
+dag_create() |>
+  dag_node(
+    descr = "Cognition increases",
+    label = "X",
+    rhs = bernoulli(theta)) |>
+  dag_node(
+    descr = "Success probability",
+    label = "Θ",
+    child = "X",
+    rhs = uniform(0,1)) |>
+  dag_render()
+```
+
+Notice, `theta` is now spelled out phonetically as opposed to using the actual Greek letter math symbol of $\theta$. While this need not be done when drawing a generative DAG by hand, we phonetically spell out the Greek letter $\theta$ as `theta` here because computer code and computer-generated DAG visuals lack easy support for the Greek alphabet. Additionally, and more importantly, we switch to using lowercase notation for both `x` and `theta` as we want to highlight that ovals in generative DAG models represent a single realization of the random variable. Later we will introduce the representation of more than one realization.
+
+### Building generative DAGs
+
+As we build these generative DAGs, it is often easiest to build and read them from bottom to top.
+
+Every node will also have a mathematical line (e.g. `x ~ Bernoulli(theta)` ). The mathematical line will always follow a three-part structure of 1) Left-hand side, 2) Relationship Type, and 3) Right-hand side:
+
+Each line of a statistical model follows one of two forms: or
+
+-   **Left-hand side (LHS)**: a mathematical label for a realization of the node (e.g. $x$ or $y$ or whatever symbol/word you choose). The purpose of the label is to have a very short way of referring to a node. To that end, you cannot include spaces in this label and try to keep it at five letters or less.
+
+-   **Relationship Type**: There are two types of relationships that can be specified:
+
+1.  a *probabilistic* relationship, denoted by the $\sim$ symbol, where the LHS node’s value is determined in a way that has some inherent randomness, such as the outcome of a coin flip. Or,
+
+    1.  a *deterministic* relationship denoted by an $=$ symbol. A deterministic relationship means the LHS node’s value is determined with zero uncertainty as a function of its inputs.
+
+-   **Right-hand side (RHS)**: either a known probability distribution governing the node’s probabilistic outcome (e.g. $\textrm{Bernoulli}(\theta)$) or a mathematical function defining the node’s value (e.g. $x + y$ ). In both cases, any parameters/variables/inputs in the RHS must be represented by a parent node to the current node in your model.

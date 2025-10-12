@@ -129,6 +129,17 @@ window.Quarto = {
   <li><a href="#limitations-of-joint-distributions" id="toc-limitations-of-joint-distributions" class="nav-link" data-scroll-target="#limitations-of-joint-distributions">Limitations of joint distributions</a></li>
   </ul></li>
   <li><a href="#graphical-models-tell-joint-distribution-stories" id="toc-graphical-models-tell-joint-distribution-stories" class="nav-link" data-scroll-target="#graphical-models-tell-joint-distribution-stories">Graphical models tell joint distribution stories</a></li>
+  <li><a href="#bayesian-inference-on-graphical-models" id="toc-bayesian-inference-on-graphical-models" class="nav-link" data-scroll-target="#bayesian-inference-on-graphical-models">Bayesian inference on graphical models</a>
+  <ul class="collapse">
+  <li><a href="#building-a-graphical-model-of-the-real-world" id="toc-building-a-graphical-model-of-the-real-world" class="nav-link" data-scroll-target="#building-a-graphical-model-of-the-real-world">Building a graphical model of the real-world</a></li>
+  <li><a href="#from-model-to-joint-distribution" id="toc-from-model-to-joint-distribution" class="nav-link" data-scroll-target="#from-model-to-joint-distribution">From model to joint distribution</a></li>
+  <li><a href="#bayesian-updating-of-the-joint-distribution" id="toc-bayesian-updating-of-the-joint-distribution" class="nav-link" data-scroll-target="#bayesian-updating-of-the-joint-distribution">Bayesian updating of the joint distribution</a></li>
+  </ul></li>
+  <li><a href="#generative-dags-and-scientific-and-statistical-models" id="toc-generative-dags-and-scientific-and-statistical-models" class="nav-link" data-scroll-target="#generative-dags-and-scientific-and-statistical-models">Generative DAGs and scientific and statistical models</a>
+  <ul class="collapse">
+  <li><a href="#generative-dags" id="toc-generative-dags" class="nav-link" data-scroll-target="#generative-dags">Generative DAGs</a></li>
+  <li><a href="#building-generative-dags" id="toc-building-generative-dags" class="nav-link" data-scroll-target="#building-generative-dags">Building generative DAGs</a></li>
+  </ul></li>
   </ul>
 </nav>
 </div>
@@ -252,11 +263,14 @@ f_X: X \rightarrow [0,1]
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggformula)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(causact) <span class="co"># causact::install_causact_deps()</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_set</span>(<span class="fu">theme_minimal</span>())</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(mosaic)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(posterior)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(bayesplot)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(causact) <span class="co"># causact::install_causact_deps()</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_set</span>(<span class="fu">theme_minimal</span>())</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dag_create</span>() <span class="sc">|&gt;</span></span>
@@ -430,7 +444,408 @@ f_X: X \rightarrow [0,1]
 <p>The one edge, <span class="math inline">\(Y \rightarrow X\)</span>, means that our uncertainty in <span class="math inline">\(X\)</span> is measured using a probability function conditional on its parent - i.e.&nbsp;<span class="math inline">\(P(X|Y)\)</span>. Since there are no edges leading into <span class="math inline">\(Y\)</span>, it has no parents, its probability distribution is <span class="math inline">\(P(Y)\)</span> . With those two probabilities in place, we can recover the joint distribution, <span class="math inline">\(P(X,Y)\)</span>, based on the definition of conditional probability <span class="math inline">\(P(X,Y) = P(Y) \times P(X|Y)\)</span>.</p>
 <p>If there are no edges between <span class="math inline">\(X\)</span> and <span class="math inline">\(Y\)</span>, then the joint distribution is recovered via <span class="math inline">\(P(X,Y)=P(X)\cdot P(Y)\)</span>. In this case, the two random variables are independent and that is not a model structure consistent with the scenario we are exploring. If the ordering of nodes for <span class="math inline">\(X\)</span> and <span class="math inline">\(Y\)</span> are reversed such that <span class="math inline">\(Y\)</span> is the parent of <span class="math inline">\(X\)</span>, then the joint distribution would be recovered via <span class="math inline">\(P(X,Y)=P(Y)\cdot P(X\mid Y)\)</span>. This math is not consistent with the story we are trying to tell. The story is that rain causes the curb to be wet, not the other way around.</p>
 <p>The general rule for a probabilistic graphical model is that its joint distribution can be factored using the chain rule formula for DAGs where <span class="math inline">\(P(X_1, X_2, \ldots, X_n) = \prod_I P(X_i|Parents(X_i))\)</span>. Hence, to model any one random variable, we only have to model its relationship to its parents instead of modelling its relationship to all of the random variables included in the model.</p>
-<p>See mathematicalmonk’s youtube video on how joint distributions are compactly represented using DAGs here: <a href="https://youtu.be/3XysEf3IQN4" class="uri">https://youtu.be/3XysEf3IQN4</a>.</p>
+<p>See <a href="www.youtube.com/@mathematicalmonk">mathematicalmonk</a>’s youtube video on how joint distributions are compactly represented using DAGs here: <a href="https://youtu.be/3XysEf3IQN4" class="uri">https://youtu.be/3XysEf3IQN4</a>.</p>
+</section>
+<section id="bayesian-inference-on-graphical-models" class="level2">
+<h2 class="anchored" data-anchor-id="bayesian-inference-on-graphical-models">Bayesian inference on graphical models</h2>
+<p><em>Plausible reasoning</em> - an allocation of credibility/plausibility to all possible explanations of the observations.</p>
+<p>Plausible reasoning in the math world is called Bayesian inference - a methodology for updating the credibility/plausibility of the various explanations in our mathematical representation of the world as more data becomes available.</p>
+<p>Let’s walk through a hypothetical argument between two scientists as to the effect of a new drug on cognition in Alzheimer’s disease (AD).</p>
+<p>Assume the two scientists have competing models for what effect the drug will have on the cognition of patients with AD:</p>
+<ol type="1">
+<li><p><em>The Optimist Model (Model1)</em> : This model is from a scientist who is very optimistic about the effect of the drug and argues that 70% of all patients will see at least a 5% increase in cognition.</p></li>
+<li><p><em>The Pessimist Model (Model2)</em> : This model is from a scientist who is very pessimistic about the effect of the drug and argues that 20% of all patients will see at least a 5% increase in cognition.</p></li>
+</ol>
+<p>These two scientists recognize and respect their differing opinions - they agree to test the new drug in one patient. They hire you as a data analyst and ask you to make the decision as to whose model is more credible in light of the test’s results. Your job is to allocate credibility to the two competing models both before seeing the test results and after seeing the test results. Initially, you might not have any reason to favor one model over another, but as data is collected, your belief in whose model is more plausible/believable/credible will change. For example, if cognition decreases, then the pessimist model would seem more credible. Your task is to allocate credibility (using probability theory) to the various models/explanations, before and after the data becomes available.</p>
+<section id="building-a-graphical-model-of-the-real-world" class="level3">
+<h3 class="anchored" data-anchor-id="building-a-graphical-model-of-the-real-world">Building a graphical model of the real-world</h3>
+<p>The first step is to create a graphical model/representation of the real world.</p>
+<p>Starting simple, <em>let’s only imagine that we test the drug in one patient</em> and our single data point (i.e.&nbsp;whether cognition increases by at least 5% or not) follows a Bernoulli distribution.</p>
+<p>The graphical model is simply:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dag_create</span>() <span class="sc">|&gt;</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">descr =</span> <span class="st">"Cognition increases"</span>,</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">"X"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_render</span>(<span class="at">shortLabel =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="grViz html-widget html-fill-item" id="htmlwidget-f25ab85bf888dc624719" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-f25ab85bf888dc624719">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\n  \"1\" [label = \"Cognition increases\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<p>And, the statistical model with the mathematical details is represented like this:</p>
+<p><span class="math display">\[
+\begin{aligned}X \equiv&amp; \textrm{ Cognition increases: } \\        &amp; \textrm{ If cognition increases more than 5}\% \textrm{, then }X=1 \textrm{ otherwise, }X=0.\\X \sim  &amp; \textrm{ Bernoulli}(\theta)\\\end{aligned}
+\]</span></p>
+<p>We have seen this model before when representing coin flips. Our data is analogous to heads or tails of a coin flip. The data will be reduced to a zero or one for each patient. If given <span class="math inline">\(\theta\)</span>, we could generate data using <code>rbern(n=1, prob=theta)</code>, but, we do not know <span class="math inline">\(\theta\)</span>; the reason we are looking at data is to answer the question: “what is <span class="math inline">\(\theta\)</span>?”</p>
+<p>From the story above, <span class="math inline">\(\theta\)</span> can only take on two values. In the optimistic model <span class="math inline">\(\theta = 70\%\)</span> and in the pessimistic model <span class="math inline">\(\theta = 20\%\)</span>. So, we have two models of the world and are uncertain as to which one is more plausible. Without data, we have no reason to believe one scientist over another, so <span class="math inline">\(P(\theta=70\%)=50\%\)</span> and <span class="math inline">\(P(\theta=20\%)=50\%\)</span> - i.e.&nbsp;each scientist is equally likely to be correct. This is just like saying <span class="math inline">\(P(\text{model1})=P(\text{model2})=50\%\)</span>. Before any data is considered, this allocation of credibility assigning probability to all the models being considered is called the <em>prior</em>. The prior is the initial probability allocated among all the possible models.</p>
+<p>See <a href="https://youtu.be/nCRTuwCdmP0" class="uri">https://youtu.be/nCRTuwCdmP0</a> for gaining some intuition about prior probabilities.</p>
+<p>So now, we can more completely specify our data story using both a graphical and a statistical model with specified prior probabilities. The graphical model is now two ovals representing our uncertainty in the probability of success and the observed cognition increase (random variable math-labels for <span class="math inline">\(\Theta\)</span> and <span class="math inline">\(X\)</span> are included for extra clarity in connecting the graphical model and the statistical model):</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dag_create</span>() <span class="sc">|&gt;</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">descr =</span> <span class="st">"Cognition increases"</span>,</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">"X"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">descr =</span> <span class="st">"Success probability"</span>,</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">"Θ"</span>,</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">child =</span> <span class="st">"X"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="grViz html-widget html-fill-item" id="htmlwidget-06a988fdd2a34d502a66" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-06a988fdd2a34d502a66">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\n  \"1\" [label = \"Cognition increases\nX\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"2\" [label = \"Success probability\nΘ\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n\"2\"->\"1\" [style = \"solid\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<p>And, the statistical model is represented like this:</p>
+<p><span class="math display">\[
+\begin{aligned}
+X \equiv&amp; \textrm{ Cognition increases: } \\
+        &amp; \textrm{ If cognition increases more than 5} \% \textrm{, then }X=1 \textrm{ otherwise, }X=0.\\
+X \sim  &amp; \textrm{ Bernoulli}(\theta)\\
+\Theta \equiv&amp; \textrm{ Success probability: } \\
+\end{aligned}
+\]</span> <span class="math display">\[
+\Theta \sim
+\begin{array}{ccc}
+  \textrm{Outcome } &amp; \textrm{ Realization }(\theta) &amp; f(\theta) \\
+  \hline
+  \textrm{Model1}  &amp; \textrm{   70}\% &amp; \textrm{  50}\% \\
+  \textrm{Model2}  &amp; \textrm{   20}\% &amp; \textrm{  50}\% \\
+\end{array}
+\]</span></p>
+<p>where the prior probability distribution for <span class="math inline">\(\Theta\)</span> is given in tabular form.</p>
+<p>The graphical model and statistical model are two different ways of representing the same story. The graphical model is more visual and intuitive, while the statistical model is more precise and mathematical. Both are useful for different purposes, but both represents a generative model, i.e., a recipe for simulating real-world data observations. In this case, following the top-down flow of the graphical model, the recipe is:</p>
+<ol type="1">
+<li>Simulate a potential success probability by randomly picking, with equal probability, either the optimist or pessimist model.</li>
+<li>Simulate a drug’s success by using the probability from (1) and generating a Bernoulli random variable with that probability of success.</li>
+</ol>
+<p>We can easily show how to simulate an observation by writing code for the recipe in R:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: Simulate a potential success probability</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>theta <span class="ot">=</span> <span class="fu">sample</span>(<span class="at">size =</span> <span class="dv">1</span>, <span class="at">x =</span> <span class="fu">c</span>(<span class="fl">0.7</span>, <span class="fl">0.2</span>), <span class="at">prob =</span> <span class="fu">c</span>(<span class="fl">0.5</span>, <span class="fl">0.5</span>))</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: Simulate a drug's success</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>x <span class="ot">=</span> <span class="fu">rbern</span>(<span class="at">n =</span> <span class="dv">1</span>, <span class="at">prob =</span> theta)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>theta</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.7</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>x</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 1</code></pre>
+</div>
+</div>
+<p>Much of your subsequent work will use this notion of generative models as recipes. You will 1) <em>create generative models</em> that serve as skeleton recipes - recipes with named probability distributions and <strong>unknown</strong> parameters - for how real-world data arises, and 2) <em>inform models with data</em> by reallocating plausibility to the recipe parameters that are most consistent with the data.</p>
+<p>A guiding principle for creating good generative models is that the generated data should mimic data that you, as a data analyst, believe is plausible. If the generative model outputs implausible data in high frequency, then your model is not capturing the essence of the underlying data story; your modelling assumptions will need work. When the generative model seems correct in the absence of data, then data can feed the updating process which sensibly reallocates prior probability so that model parameters that tend to generate data similar to the observed data are deemed more plausible.</p>
+</section>
+<section id="from-model-to-joint-distribution" class="level3">
+<h3 class="anchored" data-anchor-id="from-model-to-joint-distribution">From model to joint distribution</h3>
+<p>The graphical model shows that we have uncertainty about two related random variables: 1) <em>Success Probability</em> (<span class="math inline">\(\Theta\)</span>) <em>Cognition Increases</em> (<span class="math inline">\(X\)</span>). Our assumption - built into our prior - is that one of our two models, <span class="math inline">\(\theta = 20\%\)</span> or <span class="math inline">\(\theta = 70\%\)</span>, is correct.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This implicit assumption that one of the considered generative models is correct is sometimes referred to as the <em>small world</em> assumption. See this comparison by Richard McElreath of <em>small world</em> versus <em>large world</em> highlighting the implications of this assumption: <a href="https://youtu.be/WFv2vS8ESkk" class="uri">https://youtu.be/WFv2vS8ESkk</a>.</p>
+</div>
+</div>
+<p>We are also confident about what collecting data from one patient might yield: either a single <em>success</em> or a single <em>failure</em> in terms of the cognition increase. Prior to collecting data, there are four combinations of model and data that are potential truths. Each combination’s prior plausibility, represented by <span class="math inline">\(a\%\)</span>, <span class="math inline">\(b\%\)</span>, <span class="math inline">\(c\%\)</span> and <span class="math inline">\(d\%\)</span>, are elements of the table:</p>
+<p><span class="math display">\[
+\begin{array}{cc|cc}         &amp;                  &amp; \textrm{  Possible}                &amp; \textrm{Models  }                  \\         &amp;                  &amp; \theta = 70\% &amp; \theta = 20\% \\         \hline\textrm{Possible} &amp; \textit{Success} &amp; a\%   &amp; b\%                     \\\textrm{Data}     &amp; \textit{Failure} &amp; c\%   &amp; d\%\end{array}
+\]</span></p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate many samples from the generative model</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">map</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10000</span>, <span class="cf">function</span>(x) { theta <span class="ot">=</span> <span class="fu">sample</span>(<span class="at">size =</span> <span class="dv">1</span>, <span class="at">x =</span> <span class="fu">c</span>(<span class="fl">0.7</span>, <span class="fl">0.2</span>), <span class="at">prob =</span> <span class="fu">c</span>(<span class="fl">0.5</span>, <span class="fl">0.5</span>)); x <span class="ot">=</span> <span class="fu">rbinom</span>(<span class="at">size=</span><span class="dv">1</span>, <span class="at">n=</span><span class="dv">1</span>, <span class="at">prob=</span>theta); <span class="fu">tibble</span>(theta, x) }) <span class="sc">|&gt;</span> <span class="fu">list_rbind</span>()</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(samples)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="kable-table">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;">theta</th>
+<th style="text-align: right;">x</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0.7</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.7</td>
+<td style="text-align: right;">1</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate joint probability distribution before seeing the data, and the marginal of theta (prior)</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>joint <span class="ot">&lt;-</span> samples <span class="sc">%&gt;%</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(theta, x) <span class="sc">%&gt;%</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">count =</span> <span class="fu">n</span>(), <span class="at">.groups =</span> <span class="st">"drop"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">p =</span> count <span class="sc">/</span> <span class="fu">sum</span>(count))</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>joint</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="kable-table">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;">theta</th>
+<th style="text-align: right;">x</th>
+<th style="text-align: right;">count</th>
+<th style="text-align: right;">p</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0.2</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">4000</td>
+<td style="text-align: right;">0.4000</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1025</td>
+<td style="text-align: right;">0.1025</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.7</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1536</td>
+<td style="text-align: right;">0.1536</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.7</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3439</td>
+<td style="text-align: right;">0.3439</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>joint <span class="sc">|&gt;</span> </span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(theta) <span class="sc">|&gt;</span> </span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">prior =</span> <span class="fu">sum</span>(p))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="kable-table">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;">theta</th>
+<th style="text-align: right;">prior</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0.2</td>
+<td style="text-align: right;">0.5025</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.7</td>
+<td style="text-align: right;">0.4975</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tally</span>(<span class="sc">~</span> x <span class="sc">+</span> theta, <span class="at">data =</span> samples, <span class="at">format =</span> <span class="st">'proportion'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   theta
+x      0.2    0.7
+  0 0.4000 0.1536
+  1 0.1025 0.3439</code></pre>
+</div>
+</div>
+</section>
+<section id="bayesian-updating-of-the-joint-distribution" class="level3">
+<h3 class="anchored" data-anchor-id="bayesian-updating-of-the-joint-distribution">Bayesian updating of the joint distribution</h3>
+<p><span class="math display">\[
+P(Model | Data) = \frac{P(Data|Model) \times P(Model)}{P(Data)}
+\]</span></p>
+<p>The above formula is called <em>Bayes’ Theorem</em> and it is the mathematical engine that drives Bayesian inference. It is a simple formula, but it is very powerful. It tells us how to update our beliefs about the plausibility of various models in light of new data. The formula has four components:</p>
+<ol type="1">
+<li><span class="math inline">\(P(Model | Data)\)</span>: This is the <em>posterior</em> probability of the model given the data. It is what we are trying to compute. It tells us how plausible each model is after seeing the data.</li>
+<li><span class="math inline">\(P(Data|Model)\)</span>: This is the <em>likelihood</em> of the data given the model. It tells us how likely the observed data is under each model.</li>
+<li><span class="math inline">\(P(Model)\)</span>: This is the <em>prior</em> probability of the model.</li>
+<li><span class="math inline">\(P(Data)\)</span>: This is the <em>marginal likelihood</em> of the data. It is a normalizing constant that ensures the posterior probabilities sum to one.</li>
+</ol>
+<p>To use Bayes’ Theorem, we need to compute the likelihood of the data under each model. This is done using the probability distributions defined in our statistical model.</p>
+<p>Assume we observe a success, i.e.&nbsp;the patient’s cognition increases by at least 5%. The likelihood of this data under each model is:</p>
+<ul>
+<li>Under Model1 (<span class="math inline">\(\theta = 70\%\)</span>): <span class="math inline">\(P(X=1|\theta=70\%) = 0.7\)</span></li>
+<li>Under Model2 (<span class="math inline">\(\theta = 20\%\)</span>): <span class="math inline">\(P(X=1|\theta=20\%) = 0.2\)</span></li>
+</ul>
+<p>The marginal likelihood of the data is computed by summing the likelihoods weighted by the prior probabilities:</p>
+<p><span class="math display">\[
+P(Data) = P(X=1) = P(X=1|\theta=70\%) \times P(\theta=70\%) + P(X=1|\theta=20\%) \times P(\theta=20\%) = 0.7 \times 0.5 + 0.2 \times 0.5 = 0.45
+\]</span> Now, we can plug these values into Bayes’ Theorem to compute the posterior probabilities:</p>
+<ul>
+<li>For Model1 (<span class="math inline">\(\theta = 70\%\)</span>):</li>
+</ul>
+<p><span class="math display">\[
+P(\theta=70\%|X=1) = \frac{P(X=1|\theta=70\%) \times P(\theta=70\%)}{P(X=1)} = \frac{0.7 \times 0.5}{0.45} \approx 0.778
+\]</span></p>
+<ul>
+<li>For Model2 (<span class="math inline">\(\theta = 20\%\)</span>):</li>
+</ul>
+<p><span class="math display">\[
+P(\theta=20\%|X=1) = \frac{P(X=1|\theta=20\%) \times P(\theta=20\%)}{P(X=1)} = \frac{0.2 \times 0.5}{0.45} \approx 0.222
+\]</span></p>
+<p>So, after observing a success, the posterior probabilities are approximately 77.8% for Model1 and 22.2% for Model2. This means that after seeing the data, we believe that Model1 is more plausible than Model2.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate joint probability distribution after seeing the data (x=1), and the marginal of theta (posterior)</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>joint <span class="ot">&lt;-</span> samples <span class="sc">%&gt;%</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(x <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(theta, x) <span class="sc">%&gt;%</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">count =</span> <span class="fu">n</span>(), <span class="at">.groups =</span> <span class="st">"drop"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">p =</span> count <span class="sc">/</span> <span class="fu">sum</span>(count))</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>joint</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="kable-table">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;">theta</th>
+<th style="text-align: right;">x</th>
+<th style="text-align: right;">count</th>
+<th style="text-align: right;">p</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0.2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1025</td>
+<td style="text-align: right;">0.2296</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.7</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3439</td>
+<td style="text-align: right;">0.7704</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>joint <span class="sc">|&gt;</span> </span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(theta) <span class="sc">|&gt;</span> </span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">prior =</span> <span class="fu">sum</span>(p))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="kable-table">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;">theta</th>
+<th style="text-align: right;">prior</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0.2</td>
+<td style="text-align: right;">0.2296</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.7</td>
+<td style="text-align: right;">0.7704</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="generative-dags-and-scientific-and-statistical-models" class="level2">
+<h2 class="anchored" data-anchor-id="generative-dags-and-scientific-and-statistical-models">Generative DAGs and scientific and statistical models</h2>
+<p>Up to this point, we specified a prior joint distribution using information from both a graphical model and a statistical model. In this section, we combine the two model types, graphical models and statistical models, into one visualization called the generative DAG.</p>
+<p>The advantage of this is that the generative DAG unites real-world measurements (e.g.&nbsp;cognition increases) with their math/computation world counterparts (e.g.&nbsp;<span class="math inline">\(X \sim \textrm{Bernoulli}(\theta)\)</span>) without requiring the cognitive load of flipping back-and-forth between the graphical and statistical models.</p>
+<p>Moreover, generative DAGs, when combined with data, enable Bayesian inference to be automated (yay! no more manual calculations using Bayes rule).</p>
+<section id="generative-dags" class="level3">
+<h3 class="anchored" data-anchor-id="generative-dags">Generative DAGs</h3>
+<p>To build a generative DAG, we combine a graphical model with a <em>statistical model</em> into a single unifying representation.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>A statistical model is a mathematically expressed recipe for creating a joint distribution of related random variables. Each variable is defined either using a probability distribution or a function of the other variables. Statistical model and generative DAG will be used interchangeably. The term statistical model is just the mathematically expressed recipe. Generative DAG is the graphically expressed recipe with an embedded statistical model.</p>
+</div>
+</div>
+<p>The objective in building generative DAGs is to capture how we might go about simulating real-world measurements using the mathematical language we’ve been learning. Good generative DAGs are recipes for simulating a real-world observation in a way that reflects our domain knowledge. Then, with a generative DAG and some actual data, we will ask the computer to do Bayesian inference for us and to output an updated joint distribution of the random variables in our DAG.</p>
+<p>The creation of a generative DAG mimics the creation of graphical models with accompanying statistical models. Both the structure of the DAG and the definition of the random variables should reflect what a domain expert knows, or wants to assume, about the scientific narrative being investigated.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dag_create</span>() <span class="sc">|&gt;</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">descr =</span> <span class="st">"Cognition increases"</span>,</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">"X"</span>,</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">rhs =</span> <span class="fu">bernoulli</span>(theta)) <span class="sc">|&gt;</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">descr =</span> <span class="st">"Success probability"</span>,</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">"Θ"</span>,</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">child =</span> <span class="st">"X"</span>,</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">rhs =</span> <span class="fu">uniform</span>(<span class="dv">0</span>,<span class="dv">1</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="grViz html-widget html-fill-item" id="htmlwidget-744b8e1fe96c0688a849" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-744b8e1fe96c0688a849">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\n  \"1\" [label = \"Cognition increases\nX ~ bernoulli(theta)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"2\" [label = \"Success probability\nΘ ~ uniform(0,1)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n\"2\"->\"1\" [style = \"solid\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<p>Notice, <code>theta</code> is now spelled out phonetically as opposed to using the actual Greek letter math symbol of <span class="math inline">\(\theta\)</span>. While this need not be done when drawing a generative DAG by hand, we phonetically spell out the Greek letter <span class="math inline">\(\theta\)</span> as <code>theta</code> here because computer code and computer-generated DAG visuals lack easy support for the Greek alphabet. Additionally, and more importantly, we switch to using lowercase notation for both <code>x</code> and <code>theta</code> as we want to highlight that ovals in generative DAG models represent a single realization of the random variable. Later we will introduce the representation of more than one realization.</p>
+</section>
+<section id="building-generative-dags" class="level3">
+<h3 class="anchored" data-anchor-id="building-generative-dags">Building generative DAGs</h3>
+<p>As we build these generative DAGs, it is often easiest to build and read them from bottom to top.</p>
+<p>Every node will also have a mathematical line (e.g.&nbsp;<code>x ~ Bernoulli(theta)</code> ). The mathematical line will always follow a three-part structure of 1) Left-hand side, 2) Relationship Type, and 3) Right-hand side:</p>
+<p>Each line of a statistical model follows one of two forms: or</p>
+<ul>
+<li><p><strong>Left-hand side (LHS)</strong>: a mathematical label for a realization of the node (e.g.&nbsp;<span class="math inline">\(x\)</span> or <span class="math inline">\(y\)</span> or whatever symbol/word you choose). The purpose of the label is to have a very short way of referring to a node. To that end, you cannot include spaces in this label and try to keep it at five letters or less.</p></li>
+<li><p><strong>Relationship Type</strong>: There are two types of relationships that can be specified:</p></li>
+</ul>
+<ol type="1">
+<li><p>a <em>probabilistic</em> relationship, denoted by the <span class="math inline">\(\sim\)</span> symbol, where the LHS node’s value is determined in a way that has some inherent randomness, such as the outcome of a coin flip. Or,</p>
+<ol type="1">
+<li>a <em>deterministic</em> relationship denoted by an <span class="math inline">\(=\)</span> symbol. A deterministic relationship means the LHS node’s value is determined with zero uncertainty as a function of its inputs.</li>
+</ol></li>
+</ol>
+<ul>
+<li><strong>Right-hand side (RHS)</strong>: either a known probability distribution governing the node’s probabilistic outcome (e.g.&nbsp;<span class="math inline">\(\textrm{Bernoulli}(\theta)\)</span>) or a mathematical function defining the node’s value (e.g.&nbsp;<span class="math inline">\(x + y\)</span> ). In both cases, any parameters/variables/inputs in the RHS must be represented by a parent node to the current node in your model.</li>
+</ul>
+</section>
 </section>
 
 </main>
