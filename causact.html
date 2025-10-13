@@ -150,6 +150,13 @@ window.Quarto = {
   <li><a href="#making-probabilistic-statements-with-indicator-functions" id="toc-making-probabilistic-statements-with-indicator-functions" class="nav-link" data-scroll-target="#making-probabilistic-statements-with-indicator-functions">Making probabilistic statements with indicator functions</a></li>
   <li><a href="#credit-card-example" id="toc-credit-card-example" class="nav-link" data-scroll-target="#credit-card-example">Credit card example</a></li>
   </ul></li>
+  <li><a href="#the-binomial-distribution" id="toc-the-binomial-distribution" class="nav-link" data-scroll-target="#the-binomial-distribution">The binomial distribution</a>
+  <ul class="collapse">
+  <li><a href="#using-a-beta-prior-for-the-bernoulli-parameter" id="toc-using-a-beta-prior-for-the-bernoulli-parameter" class="nav-link" data-scroll-target="#using-a-beta-prior-for-the-bernoulli-parameter">Using a Beta prior for the Bernoulli parameter</a></li>
+  <li><a href="#matching-beta-parameters-to-your-beliefs" id="toc-matching-beta-parameters-to-your-beliefs" class="nav-link" data-scroll-target="#matching-beta-parameters-to-your-beliefs">Matching Beta parameters to your beliefs</a></li>
+  <li><a href="#using-a-beta-prior-for-the-bernoulli-parameter-1" id="toc-using-a-beta-prior-for-the-bernoulli-parameter-1" class="nav-link" data-scroll-target="#using-a-beta-prior-for-the-bernoulli-parameter-1">Using a Beta prior for the Bernoulli parameter</a></li>
+  <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a></li>
+  </ul></li>
   </ul>
 </nav>
 </div>
@@ -1414,6 +1421,332 @@ P(x \geq 3) = \mathbb{E}[1_{x \geq 3}] \approx \frac{1}{5} \sum_{j=1}^5 1_{x_j \
 <p><img src="causact_files/figure-html/unnamed-chunk-39-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
+</div>
+</div>
+</section>
+</section>
+<section id="the-binomial-distribution" class="level2">
+<h2 class="anchored" data-anchor-id="the-binomial-distribution">The binomial distribution</h2>
+<p>Making a model requires constructing a set of inter-related random variables. Some of these random variables are observed and others are latent (i.e.&nbsp;not observed). A common pattern is to:</p>
+<ol type="1">
+<li><p><em>Assume observed variables comes from a specified family of probability distributions.</em> So far, that known family has been the <code>Bernoulli</code> distribution.</p></li>
+<li><p><em>Use latent variables to model uncertainty in the parameters of the distribution family in step 1.</em> So far, this uncertainty was modeled with the uniform distribution.</p></li>
+</ol>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dag_create</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="at">descr =</span> <span class="st">"Bernoulli RV"</span>, </span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a>           <span class="at">label =</span> <span class="st">"x"</span>,</span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">bernoulli</span>(theta),</span>
+<span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb52-6"><a href="#cb52-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="at">descr =</span> <span class="st">"Bernoulli parameter RV"</span>, </span>
+<span id="cb52-7"><a href="#cb52-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">label =</span> <span class="st">"theta"</span>,</span>
+<span id="cb52-8"><a href="#cb52-8" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">uniform</span>(<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb52-9"><a href="#cb52-9" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"x"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb52-10"><a href="#cb52-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="grViz html-widget html-fill-item" id="htmlwidget-d57ecbd3ad10bd2d35a2" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-d57ecbd3ad10bd2d35a2">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\n  \"1\" [label = \"Bernoulli RV [3]\nx ~ bernoulli(theta)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"2\" [label = \"Bernoulli parameter RV\ntheta ~ uniform(0,1)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n\"2\"->\"1\" [style = \"solid\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<p>The generative DAG we have been working with contains two inter-related random variables <span class="math inline">\(X\)</span> and <span class="math inline">\(\Theta\)</span>. For any observed realization <span class="math inline">\(x\)</span>, we assume it came from a <span class="math inline">\(\textrm{Bernoulli}(\theta)\)</span> generating process; i.e.&nbsp;there is zero uncertainty that the data is generated from a Bernoulli distribution. Given a specific parameter value <span class="math inline">\(\theta\)</span>, the uncertainty in <span class="math inline">\(X\)</span> is purely due to the stochastic nature of a Bernoulli random variable. The takeaway is that for <strong>observed</strong> data, our statistical model restricts the generative recipe to be from the specified family - i.e.&nbsp;Bernoulli.</p>
+<p>We also model uncertainty in the <strong>unobserved</strong> random variable <span class="math inline">\(\Theta\)</span>. Modelling uncertainty in unobserved RV’s is different in that the posterior distribution of <span class="math inline">\(\theta\)</span> is <strong>not</strong> restricted to be from the same distribution family as its prior specification. In fact, for most cases our posterior distribution for unobserved random variables cannot be summarized using a known distribution family (e.g.&nbsp;normal, uniform, etc.); posteriors will only be approximated with representative samples as that is the best we can do.</p>
+<p>When it comes to representing prior uncertainty, try to pick a distribution whose <em>support</em> The support of a random variable and its associated probability distribution is the set of possible realizations with non-zero probability density.covers all possible realizations of the RV. For <span class="math inline">\(\Theta\)</span>, this would be a probability distribution whose support is all values such that <span class="math inline">\(0 \le \theta \le 1\)</span>. The <span class="math inline">\(\textrm{Uniform}(0,1)\)</span> distribution provided an example where prior uncertainty mapped to all possible values of <span class="math inline">\(\theta\)</span>, but after updating that uncertainty in light of data, we have already seen that the posterior distribution was no longer uniform.</p>
+<p>If we do not have uniform beliefs about plausible values for <span class="math inline">\(\theta\)</span>, there is another well-known and more-flexible distribution that can be used as a prior for <span class="math inline">\(\theta\)</span>. In other words, if you were to ask a statistician “what other distributions have support that ensures <span class="math inline">\(0 \le \theta \le 1\)</span>?”, a likely response you will get is the distribution. In the absence of a statistician, go to wikipedia, <a href="https://en.wikipedia.org/wiki/List_of_probability_distributions" class="uri">https://en.wikipedia.org/wiki/List_of_probability_distributions</a>, and find a useful list of probability distributions. You’ll see the first one in the list is the Bernoulli distribution. To find others that might be useful in a certain case:</p>
+<ol type="1">
+<li><p>Match the support of the distribution with what you think is feasible. The wikipedia list has multiple categories for support, we have only seen these two so far:</p>
+<ul>
+<li><p>Discrete with finite support (e.g.&nbsp;Bernoulli)</p></li>
+<li><p>Continuous on a bounded interval (e.g.&nbsp;uniform)</p></li>
+</ul></li>
+<li><p>Investigate how changing parameters can make a distribution more consistent with the assumptions you are willing to make about your generative recipe.</p></li>
+</ol>
+<p>In this section, we investigate the Beta distribution whose support is continuous on a bounded interval and lends itself nicely to model our assumptions about an unknown probability parameter.</p>
+<section id="using-a-beta-prior-for-the-bernoulli-parameter" class="level3">
+<h3 class="anchored" data-anchor-id="using-a-beta-prior-for-the-bernoulli-parameter">Using a Beta prior for the Bernoulli parameter</h3>
+<p>A Beta distribution is a two-parameter distribution whose support is <span class="math inline">\([0,1]\)</span>. The two-parameters are typically called <span class="math inline">\(\alpha\)</span> (alpha) and <span class="math inline">\(\beta\)</span> (beta); yes, it is annoying and might feel confusing that the Beta distribution has a parameter of the same-name, <span class="math inline">\(\beta\)</span>, but generally, it is clear from context which one you are talking about. Let’s assume random variable <span class="math inline">\(\Theta\)</span> follows a Beta distribution. Hence,</p>
+<p><span class="math display">\[
+\Theta \sim \textrm{beta}(\alpha,\beta)
+\]</span></p>
+<p>then we can plot a representative sample:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="dv">10000</span> <span class="co"># number of realizations to generate</span></span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a><span class="co"># get vector of 10,000 random draws of theta</span></span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>thetas <span class="ot">=</span> <span class="fu">rbeta</span>(n, <span class="at">shape1 =</span> <span class="dv">6</span>, <span class="at">shape2 =</span> <span class="dv">2</span>) </span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a><span class="do">## make a dataframe for plotting</span></span>
+<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a>thetas <span class="ot">=</span> <span class="fu">tibble</span>(thetas) </span>
+<span id="cb53-7"><a href="#cb53-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-8"><a href="#cb53-8" aria-hidden="true" tabindex="-1"></a><span class="do">## show some values of theta</span></span>
+<span id="cb53-9"><a href="#cb53-9" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(thetas)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="kable-table">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;">thetas</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0.8768</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.7980</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.8923</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.8895</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.9039</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.9175</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_areas</span>(thetas)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-42-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>As a prior for a Bernoulli parameter, this distribution does seem valid in the sense that <span class="math inline">\(0 \leq \theta \leq 1\)</span>. Clearly however, this is not a uniform prior anymore. This prior suggests that values greater than 50% are much more likely than smaller values (i.e.&nbsp;there is more draws of higher <code>theta</code> values in the representative sample than lower <code>theta</code> values). So, to use this prior suggests that you have a strong prior belief that success is more likely than failure.</p>
+</section>
+<section id="matching-beta-parameters-to-your-beliefs" class="level3">
+<h3 class="anchored" data-anchor-id="matching-beta-parameters-to-your-beliefs">Matching Beta parameters to your beliefs</h3>
+<p>With named probability distributions, we can use the <code>stat_function</code> layer available with ggplot2 to plot the exact distribution instead of the approximated distribution using a representative sample. For example, the below code plot the exact <span class="math inline">\(\textrm{Beta}(6,2)\)</span> distribution.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stat_function</span>(<span class="at">fun =</span> dbeta,</span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a>                <span class="at">args =</span> <span class="fu">c</span>(<span class="at">shape1 =</span> <span class="dv">6</span>, <span class="at">shape2 =</span> <span class="dv">2</span>)) <span class="sc">+</span></span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlim</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-43-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(<span class="at">theta =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> theta)) <span class="sc">+</span></span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_area</span>(<span class="at">stat =</span> <span class="st">"function"</span>,</span>
+<span id="cb56-4"><a href="#cb56-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">fun =</span> dbeta, </span>
+<span id="cb56-5"><a href="#cb56-5" aria-hidden="true" tabindex="-1"></a>            <span class="at">args =</span> <span class="fu">c</span>(<span class="at">shape1 =</span> <span class="dv">6</span>, <span class="at">shape2 =</span> <span class="dv">2</span>),</span>
+<span id="cb56-6"><a href="#cb56-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">fill =</span> <span class="st">"gray"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-44-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="fu">gf_function</span>(<span class="at">fun =</span> dbeta,</span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>            <span class="at">args =</span> <span class="fu">c</span>(<span class="at">shape1 =</span> <span class="dv">6</span>, <span class="at">shape2 =</span> <span class="dv">2</span>),</span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-45-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>From the perspective of using the <span class="math inline">\(\textrm{Beta}(6,2)\)</span> distribution to represent our beliefs about probability of success for a Bernoulli RV, we again see that higher probability values are more plausible than lower ones (i.e.&nbsp;there is more blue filled area above the higher theta values). If this represented our uncertainty in a trick coin’s probability of heads, we are suggesting that it is most likely biased to land on heads (i.e.&nbsp;more area for <code>theta</code> values above 0.5 than below). That being said, there is visible area (i.e.&nbsp;probability) for the <code>theta</code> values below 0.5, so using this prior also suggests that the coin has the potential to be tails-biased; we would just need to flip the coin and see a bunch of tails to reallocate our plausibility beliefs to these lower values.</p>
+<p>Beta distributions for various <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\beta\)</span> parameter values are shown below:</p>
+<p><img src="images/clipboard-1766480459.png" class="img-fluid"></p>
+<p>We see the Beta distribution is flexible in showing a variety of representations of our uncertainty. When looking at the distribution for <span class="math inline">\(\textrm{Beta}(0.5,0.5)\)</span> distribution (top-left) we see that <code>theta</code> values closer to zero or one have higher density values than values closer to 0.5. At the other end, a <span class="math inline">\(\textrm{Beta}(4,4)\)</span> distribution distribution places more plausibility for values closer to 0.5. In between, it seems distributions that favor high or low values for <code>theta</code> can be constructed.</p>
+<p>The Beta distribution has a very neat property which can aid your selection of parameters to model your uncertainty:</p>
+<blockquote class="blockquote">
+<p>you can roughly interpret <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\beta\)</span> as previously observed data where the <span class="math inline">\(\alpha\)</span> parameter is the number of successes you have observed and the <span class="math inline">\(\beta\)</span> parameter is the number of failures.</p>
+</blockquote>
+<p>Hence, a <span class="math inline">\(\textrm{Beta}(1,1)\)</span> distribution (which is mathematically equivalent to a <span class="math inline">\(\textrm{Uniform(0,1)}\)</span> distribution) can be thought of as saying a single success and failure have been witnessed, but we are completely unsure as to the probability of each. Whereas, a <span class="math inline">\(\textrm{Beta}(10,10)\)</span> distribution is like suggesting you have seen 20 outcomes and they have been split down the middle - i.e.&nbsp;you have observed some small evidence that the two outcomes occur in equal proportions. Another distribution, say <span class="math inline">\(\textrm{Beta}(10,20)\)</span>, can indicate a belief that would accompany having seen 30 outcomes where failures occur 2 times as frequently as successes. Finally, a distribution like <span class="math inline">\(\textrm{Beta}(500,500)\)</span> might be used to represent your uncertainty in the flip of a fair coin. These four distributions (i.e.&nbsp;probability density functions) are shown below side-by-side.</p>
+<p><img src="images/clipboard-2183603856.png" class="img-fluid"></p>
+<p>Moving forward, we will often use the Beta distribution to represent our prior beliefs regarding a probability or a proportion. The support is <span class="math inline">\([0,1]\)</span> and it is able to adopt some flexible shapes.</p>
+</section>
+<section id="using-a-beta-prior-for-the-bernoulli-parameter-1" class="level3">
+<h3 class="anchored" data-anchor-id="using-a-beta-prior-for-the-bernoulli-parameter-1">Using a Beta prior for the Bernoulli parameter</h3>
+<p>Let’s define a generative DAG declaring a <span class="math inline">\(\textrm{Beta}(2,2)\)</span> prior as representative of our uncertainty in <span class="math inline">\(\theta\)</span>. We aren’t saying too much with this prior. This is a <em>weak prior</em> because. as we will see, it will be easily overwhelmed by data; its just saying that two successes and two failures have been seen. Let’s imagine that we observe 20 successes and only two failures. This data is highly consistent with a very large value for theta. We can intelligently combine prior and data using <code>dag_numpyro()</code> to get our posterior:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="co"># assume twenty successes and two failures</span></span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a>data <span class="ot">=</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="dv">1</span>,<span class="dv">20</span>), <span class="fu">rep</span>(<span class="dv">0</span>,<span class="dv">2</span>))</span>
+<span id="cb58-3"><a href="#cb58-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb58-4"><a href="#cb58-4" aria-hidden="true" tabindex="-1"></a><span class="co"># get representative sample of posterior</span></span>
+<span id="cb58-5"><a href="#cb58-5" aria-hidden="true" tabindex="-1"></a>graph <span class="ot">=</span> <span class="fu">dag_create</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb58-6"><a href="#cb58-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Bernoulli RV"</span>,<span class="st">"x"</span>,</span>
+<span id="cb58-7"><a href="#cb58-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">bernoulli</span>(theta),</span>
+<span id="cb58-8"><a href="#cb58-8" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> data) <span class="sc">%&gt;%</span></span>
+<span id="cb58-9"><a href="#cb58-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Bernoulli Parameter RV"</span>,<span class="st">"theta"</span>,</span>
+<span id="cb58-10"><a href="#cb58-10" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">beta</span>(<span class="dv">2</span>,<span class="dv">2</span>),</span>
+<span id="cb58-11"><a href="#cb58-11" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"x"</span>)</span>
+<span id="cb58-12"><a href="#cb58-12" aria-hidden="true" tabindex="-1"></a>draws <span class="ot">=</span> graph <span class="sc">%&gt;%</span> <span class="fu">dag_numpyro</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_areas</span>(draws)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-47-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(draws, <span class="fu">aes</span>(<span class="at">x =</span> theta)) <span class="sc">+</span></span>
+<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_area</span>(<span class="at">stat =</span> <span class="st">"function"</span>,</span>
+<span id="cb60-3"><a href="#cb60-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">fun =</span> dbeta, </span>
+<span id="cb60-4"><a href="#cb60-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">args =</span> <span class="fu">list</span>(<span class="dv">2</span>,<span class="dv">2</span>),</span>
+<span id="cb60-5"><a href="#cb60-5" aria-hidden="true" tabindex="-1"></a>            <span class="at">fill =</span> <span class="st">'grey'</span>) <span class="sc">+</span> </span>
+<span id="cb60-6"><a href="#cb60-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_density</span>() <span class="sc">+</span></span>
+<span id="cb60-7"><a href="#cb60-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlim</span>(<span class="dv">0</span>,<span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-48-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The figure shows a dramatic shift from prior to posterior distribution. The weak prior suggested ot us that all values between zero and one had plausibility, but once observing 20 successes out of 22 trials, the higher values for <span class="math inline">\(\theta\)</span> became much more plausible.</p>
+<p>If we want to change the prior to something stronger, say a <span class="math inline">\(\textrm{Beta}(50,50)\)</span>, then we can rerun <code>dag_numpyro()</code> after just changing the one line for the prior:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb61"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="co"># assume twenty successes and two failures</span></span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a>data <span class="ot">=</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="dv">1</span>,<span class="dv">20</span>), <span class="fu">rep</span>(<span class="dv">0</span>,<span class="dv">2</span>))</span>
+<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a><span class="co"># get representative sample of posterior</span></span>
+<span id="cb61-5"><a href="#cb61-5" aria-hidden="true" tabindex="-1"></a>graph <span class="ot">=</span> <span class="fu">dag_create</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb61-6"><a href="#cb61-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Bernoulli RV"</span>,<span class="st">"x"</span>,</span>
+<span id="cb61-7"><a href="#cb61-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">bernoulli</span>(theta),</span>
+<span id="cb61-8"><a href="#cb61-8" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> data) <span class="sc">%&gt;%</span></span>
+<span id="cb61-9"><a href="#cb61-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Bernoulli Parameter RV"</span>,<span class="st">"theta"</span>,</span>
+<span id="cb61-10"><a href="#cb61-10" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">beta</span>(<span class="dv">50</span>,<span class="dv">50</span>),</span>
+<span id="cb61-11"><a href="#cb61-11" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"x"</span>)</span>
+<span id="cb61-12"><a href="#cb61-12" aria-hidden="true" tabindex="-1"></a>draws <span class="ot">=</span> graph <span class="sc">%&gt;%</span> <span class="fu">dag_numpyro</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(draws, <span class="fu">aes</span>(<span class="at">x =</span> theta)) <span class="sc">+</span></span>
+<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_area</span>(<span class="at">stat =</span> <span class="st">"function"</span>,</span>
+<span id="cb62-3"><a href="#cb62-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">fun =</span> dbeta, </span>
+<span id="cb62-4"><a href="#cb62-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">args =</span> <span class="fu">list</span>(<span class="dv">50</span>,<span class="dv">50</span>),</span>
+<span id="cb62-5"><a href="#cb62-5" aria-hidden="true" tabindex="-1"></a>            <span class="at">fill =</span> <span class="st">'grey'</span>) <span class="sc">+</span> </span>
+<span id="cb62-6"><a href="#cb62-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_density</span>() <span class="sc">+</span></span>
+<span id="cb62-7"><a href="#cb62-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlim</span>(<span class="dv">0</span>,<span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-50-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The figure shows a posterior distribution that is only mildly shifted from its prior. This is a direct result of a <em>strong prior</em> due to the larger <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\beta\)</span> parameters. In general, we will seek <em>weakly informative priors</em> that yield plausible prior generating processes, yet are flexible enough to let the data inform the posterior generating process. There is a bit of an art to this and we will learn more in subsequent sections.</p>
+</section>
+<section id="example" class="level3">
+<h3 class="anchored" data-anchor-id="example">Example</h3>
+<p>Your company has been testing two flavors of coffee using free samples, let’s call them Flavor A and Flavor B. You are planning to only offer one flavor for sale and are interested in whether your customers prefer Flavor A or Flavor B.</p>
+<p>You use a taste testing survey of 60 randomly selected people, and find that 36 people prefer Flavor B.</p>
+<p>What’s the the posterior probability that Flavor B is preferred to Flavor A? In other words, what percentage of your posterior draws (assuming the generative DAG shown below) have a <code>theta</code> that is above 0.5?</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a>data <span class="ot">=</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="dv">1</span>,<span class="dv">36</span>), <span class="fu">rep</span>(<span class="dv">0</span>,<span class="dv">24</span>))</span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a>graph <span class="ot">=</span> <span class="fu">dag_create</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb63-4"><a href="#cb63-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="at">descr =</span> <span class="st">"Flavor B preferred"</span>,</span>
+<span id="cb63-5"><a href="#cb63-5" aria-hidden="true" tabindex="-1"></a>           <span class="at">label =</span> <span class="st">"x"</span>,</span>
+<span id="cb63-6"><a href="#cb63-6" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">bernoulli</span>(theta),</span>
+<span id="cb63-7"><a href="#cb63-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> data) <span class="sc">%&gt;%</span></span>
+<span id="cb63-8"><a href="#cb63-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="at">descr =</span> <span class="st">"Prob flavor B preferred"</span>,</span>
+<span id="cb63-9"><a href="#cb63-9" aria-hidden="true" tabindex="-1"></a>           <span class="at">label =</span> <span class="st">"theta"</span>,</span>
+<span id="cb63-10"><a href="#cb63-10" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">beta</span>(<span class="dv">2</span>,<span class="dv">2</span>),</span>
+<span id="cb63-11"><a href="#cb63-11" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"x"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb63-12"><a href="#cb63-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_plate</span>(<span class="at">descr =</span> <span class="st">"Observations"</span>,</span>
+<span id="cb63-13"><a href="#cb63-13" aria-hidden="true" tabindex="-1"></a>            <span class="at">label =</span> <span class="st">"i"</span>,</span>
+<span id="cb63-14"><a href="#cb63-14" aria-hidden="true" tabindex="-1"></a>            <span class="at">nodeLabels =</span> <span class="st">"x"</span>)</span>
+<span id="cb63-15"><a href="#cb63-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb63-16"><a href="#cb63-16" aria-hidden="true" tabindex="-1"></a>graph <span class="sc">|&gt;</span> <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="grViz html-widget html-fill-item" id="htmlwidget-e76df25d4e1770d66a86" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-e76df25d4e1770d66a86">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\n  \"2\" [label = \"Prob flavor B preferred\ntheta ~ beta(2,2)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \nsubgraph cluster2{\nlabel=\"Observations i [60]\"\n  \"1\" [label = \"Flavor B preferred\nx ~ bernoulli(theta)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] }\n\n\"2\"->\"1\" [style = \"solid\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb64"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a>draws <span class="ot">=</span> graph <span class="sc">%&gt;%</span> <span class="fu">dag_numpyro</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a>draws <span class="sc">%&gt;%</span> <span class="fu">dagp_plot</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-53-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summarise_draws</span>(draws)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="kable-table">
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 12%">
+<col style="width: 8%">
+<col style="width: 9%">
+<col style="width: 8%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 8%">
+<col style="width: 7%">
+<col style="width: 12%">
+<col style="width: 12%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">variable</th>
+<th style="text-align: right;">mean</th>
+<th style="text-align: right;">median</th>
+<th style="text-align: right;">sd</th>
+<th style="text-align: right;">mad</th>
+<th style="text-align: right;">q5</th>
+<th style="text-align: right;">q95</th>
+<th style="text-align: right;">rhat</th>
+<th style="text-align: right;">ess_bulk</th>
+<th style="text-align: right;">ess_tail</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">theta</td>
+<td style="text-align: right;">0.596</td>
+<td style="text-align: right;">0.5969</td>
+<td style="text-align: right;">0.061</td>
+<td style="text-align: right;">0.0614</td>
+<td style="text-align: right;">0.4925</td>
+<td style="text-align: right;">0.697</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1370</td>
+<td style="text-align: right;">1904</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(draws<span class="sc">$</span>theta <span class="sc">&gt;</span> <span class="fl">0.5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.94</code></pre>
 </div>
 </div>
 </section>

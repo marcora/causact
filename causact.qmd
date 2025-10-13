@@ -866,3 +866,221 @@ draws = graph %>% dag_numpyro()
 ```{r}
 draws %>% dagp_plot()
 ```
+
+## The binomial distribution
+
+Making a model requires constructing a set of inter-related random variables. Some of these random variables are observed and others are latent (i.e. not observed). A common pattern is to:
+
+1.  *Assume observed variables comes from a specified family of probability distributions.* So far, that known family has been the `Bernoulli` distribution.
+
+2.  *Use latent variables to model uncertainty in the parameters of the distribution family in step 1.* So far, this uncertainty was modeled with the uniform distribution.
+
+```{r}
+dag_create() %>%
+  dag_node(descr = "Bernoulli RV", 
+           label = "x",
+           rhs = bernoulli(theta),
+           data = c(1,1,0)) %>%
+  dag_node(descr = "Bernoulli parameter RV", 
+           label = "theta",
+           rhs = uniform(0,1),
+           child = "x") |>
+  dag_render()
+```
+
+The generative DAG we have been working with contains two inter-related random variables $X$ and $\Theta$. For any observed realization $x$, we assume it came from a $\textrm{Bernoulli}(\theta)$ generating process; i.e. there is zero uncertainty that the data is generated from a Bernoulli distribution. Given a specific parameter value $\theta$, the uncertainty in $X$ is purely due to the stochastic nature of a Bernoulli random variable. The takeaway is that for **observed** data, our statistical model restricts the generative recipe to be from the specified family - i.e. Bernoulli.
+
+We also model uncertainty in the **unobserved** random variable $\Theta$. Modelling uncertainty in unobserved RV’s is different in that the posterior distribution of $\theta$ is **not** restricted to be from the same distribution family as its prior specification. In fact, for most cases our posterior distribution for unobserved random variables cannot be summarized using a known distribution family (e.g. normal, uniform, etc.); posteriors will only be approximated with representative samples as that is the best we can do.
+
+When it comes to representing prior uncertainty, try to pick a distribution whose *support* The support of a random variable and its associated probability distribution is the set of possible realizations with non-zero probability density.covers all possible realizations of the RV. For $\Theta$, this would be a probability distribution whose support is all values such that $0 \le \theta \le 1$. The $\textrm{Uniform}(0,1)$ distribution provided an example where prior uncertainty mapped to all possible values of $\theta$, but after updating that uncertainty in light of data, we have already seen that the posterior distribution was no longer uniform.
+
+If we do not have uniform beliefs about plausible values for $\theta$, there is another well-known and more-flexible distribution that can be used as a prior for $\theta$. In other words, if you were to ask a statistician “what other distributions have support that ensures $0 \le \theta \le 1$?”, a likely response you will get is the distribution. In the absence of a statistician, go to wikipedia, <https://en.wikipedia.org/wiki/List_of_probability_distributions>, and find a useful list of probability distributions. You’ll see the first one in the list is the Bernoulli distribution. To find others that might be useful in a certain case:
+
+1.  Match the support of the distribution with what you think is feasible. The wikipedia list has multiple categories for support, we have only seen these two so far:
+
+    -   Discrete with finite support (e.g. Bernoulli)
+
+    -   Continuous on a bounded interval (e.g. uniform)
+
+2.  Investigate how changing parameters can make a distribution more consistent with the assumptions you are willing to make about your generative recipe.
+
+In this section, we investigate the Beta distribution whose support is continuous on a bounded interval and lends itself nicely to model our assumptions about an unknown probability parameter.
+
+### Using a Beta prior for the Bernoulli parameter
+
+A Beta distribution is a two-parameter distribution whose support is $[0,1]$. The two-parameters are typically called $\alpha$ (alpha) and $\beta$ (beta); yes, it is annoying and might feel confusing that the Beta distribution has a parameter of the same-name, $\beta$, but generally, it is clear from context which one you are talking about. Let’s assume random variable $\Theta$ follows a Beta distribution. Hence,
+
+$$
+\Theta \sim \textrm{beta}(\alpha,\beta)
+$$
+
+then we can plot a representative sample:
+
+```{r}
+n = 10000 # number of realizations to generate
+# get vector of 10,000 random draws of theta
+thetas = rbeta(n, shape1 = 6, shape2 = 2) 
+
+## make a dataframe for plotting
+thetas = tibble(thetas) 
+
+## show some values of theta
+head(thetas)
+```
+
+```{r}
+mcmc_areas(thetas)
+```
+
+As a prior for a Bernoulli parameter, this distribution does seem valid in the sense that $0 \leq \theta \leq 1$. Clearly however, this is not a uniform prior anymore. This prior suggests that values greater than 50% are much more likely than smaller values (i.e. there is more draws of higher `theta` values in the representative sample than lower `theta` values). So, to use this prior suggests that you have a strong prior belief that success is more likely than failure.
+
+### Matching Beta parameters to your beliefs
+
+With named probability distributions, we can use the `stat_function` layer available with ggplot2 to plot the exact distribution instead of the approximated distribution using a representative sample. For example, the below code plot the exact $\textrm{Beta}(6,2)$ distribution.
+
+```{r}
+ggplot() +
+  stat_function(fun = dbeta,
+                args = c(shape1 = 6, shape2 = 2)) +
+  xlim(0, 1)
+```
+
+```{r}
+tibble(theta = c(0, 1)) |>
+  ggplot(aes(x = theta)) +
+  geom_area(stat = "function",
+            fun = dbeta, 
+            args = c(shape1 = 6, shape2 = 2),
+            fill = "gray")
+```
+
+```{r}
+gf_function(fun = dbeta,
+            args = c(shape1 = 6, shape2 = 2),
+            xlim = c(0, 1))
+```
+
+From the perspective of using the $\textrm{Beta}(6,2)$ distribution to represent our beliefs about probability of success for a Bernoulli RV, we again see that higher probability values are more plausible than lower ones (i.e. there is more blue filled area above the higher theta values). If this represented our uncertainty in a trick coin’s probability of heads, we are suggesting that it is most likely biased to land on heads (i.e. more area for `theta` values above 0.5 than below). That being said, there is visible area (i.e. probability) for the `theta` values below 0.5, so using this prior also suggests that the coin has the potential to be tails-biased; we would just need to flip the coin and see a bunch of tails to reallocate our plausibility beliefs to these lower values.
+
+Beta distributions for various $\alpha$ and $\beta$ parameter values are shown below:
+
+![](images/clipboard-1766480459.png)
+
+We see the Beta distribution is flexible in showing a variety of representations of our uncertainty. When looking at the distribution for $\textrm{Beta}(0.5,0.5)$ distribution (top-left) we see that `theta` values closer to zero or one have higher density values than values closer to 0.5. At the other end, a $\textrm{Beta}(4,4)$ distribution distribution places more plausibility for values closer to 0.5. In between, it seems distributions that favor high or low values for `theta` can be constructed.
+
+The Beta distribution has a very neat property which can aid your selection of parameters to model your uncertainty:
+
+> you can roughly interpret $\alpha$ and $\beta$ as previously observed data where the $\alpha$ parameter is the number of successes you have observed and the $\beta$ parameter is the number of failures.
+
+Hence, a $\textrm{Beta}(1,1)$ distribution (which is mathematically equivalent to a $\textrm{Uniform(0,1)}$ distribution) can be thought of as saying a single success and failure have been witnessed, but we are completely unsure as to the probability of each. Whereas, a $\textrm{Beta}(10,10)$ distribution is like suggesting you have seen 20 outcomes and they have been split down the middle - i.e. you have observed some small evidence that the two outcomes occur in equal proportions. Another distribution, say $\textrm{Beta}(10,20)$, can indicate a belief that would accompany having seen 30 outcomes where failures occur 2 times as frequently as successes. Finally, a distribution like $\textrm{Beta}(500,500)$ might be used to represent your uncertainty in the flip of a fair coin. These four distributions (i.e. probability density functions) are shown below side-by-side.
+
+![](images/clipboard-2183603856.png)
+
+Moving forward, we will often use the Beta distribution to represent our prior beliefs regarding a probability or a proportion. The support is $[0,1]$ and it is able to adopt some flexible shapes.
+
+### Using a Beta prior for the Bernoulli parameter
+
+Let's define a generative DAG declaring a $\textrm{Beta}(2,2)$ prior as representative of our uncertainty in $\theta$. We aren’t saying too much with this prior. This is a *weak prior* because. as we will see, it will be easily overwhelmed by data; its just saying that two successes and two failures have been seen. Let’s imagine that we observe 20 successes and only two failures. This data is highly consistent with a very large value for theta. We can intelligently combine prior and data using `dag_numpyro()` to get our posterior:
+
+```{r}
+# assume twenty successes and two failures
+data = c(rep(1,20), rep(0,2))
+
+# get representative sample of posterior
+graph = dag_create() %>%
+  dag_node("Bernoulli RV","x",
+           rhs = bernoulli(theta),
+           data = data) %>%
+  dag_node("Bernoulli Parameter RV","theta",
+           rhs = beta(2,2),
+           child = "x")
+draws = graph %>% dag_numpyro()
+```
+
+```{r}
+mcmc_areas(draws)
+```
+
+```{r}
+ggplot(draws, aes(x = theta)) +
+  geom_area(stat = "function",
+            fun = dbeta, 
+            args = list(2,2),
+            fill = 'grey') + 
+  geom_density() +
+  xlim(0,1)
+```
+
+The figure shows a dramatic shift from prior to posterior distribution. The weak prior suggested ot us that all values between zero and one had plausibility, but once observing 20 successes out of 22 trials, the higher values for $\theta$ became much more plausible.
+
+If we want to change the prior to something stronger, say a $\textrm{Beta}(50,50)$, then we can rerun `dag_numpyro()` after just changing the one line for the prior:
+
+```{r}
+# assume twenty successes and two failures
+data = c(rep(1,20), rep(0,2))
+
+# get representative sample of posterior
+graph = dag_create() %>%
+  dag_node("Bernoulli RV","x",
+           rhs = bernoulli(theta),
+           data = data) %>%
+  dag_node("Bernoulli Parameter RV","theta",
+           rhs = beta(50,50),
+           child = "x")
+draws = graph %>% dag_numpyro()
+```
+
+```{r}
+ggplot(draws, aes(x = theta)) +
+  geom_area(stat = "function",
+            fun = dbeta, 
+            args = list(50,50),
+            fill = 'grey') + 
+  geom_density() +
+  xlim(0,1)
+```
+
+The figure shows a posterior distribution that is only mildly shifted from its prior. This is a direct result of a *strong prior* due to the larger $\alpha$ and $\beta$ parameters. In general, we will seek *weakly informative priors* that yield plausible prior generating processes, yet are flexible enough to let the data inform the posterior generating process. There is a bit of an art to this and we will learn more in subsequent sections.
+
+### Example
+
+Your company has been testing two flavors of coffee using free samples, let’s call them Flavor A and Flavor B. You are planning to only offer one flavor for sale and are interested in whether your customers prefer Flavor A or Flavor B.
+
+You use a taste testing survey of 60 randomly selected people, and find that 36 people prefer Flavor B.
+
+What's the the posterior probability that Flavor B is preferred to Flavor A? In other words, what percentage of your posterior draws (assuming the generative DAG shown below) have a `theta` that is above 0.5?
+
+```{r}
+data = c(rep(1,36), rep(0,24))
+  
+graph = dag_create() %>%
+  dag_node(descr = "Flavor B preferred",
+           label = "x",
+           rhs = bernoulli(theta),
+           data = data) %>%
+  dag_node(descr = "Prob flavor B preferred",
+           label = "theta",
+           rhs = beta(2,2),
+           child = "x") %>%
+  dag_plate(descr = "Observations",
+            label = "i",
+            nodeLabels = "x")
+
+graph |> dag_render()
+```
+
+```{r}
+draws = graph %>% dag_numpyro()
+```
+
+```{r}
+draws %>% dagp_plot()
+```
+
+```{r}
+summarise_draws(draws)
+```
+
+```{r}
+mean(draws$theta > 0.5)
+```
