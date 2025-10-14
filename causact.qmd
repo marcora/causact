@@ -121,7 +121,7 @@ numFlips = 50 ## flip the coin 50 times
 df = data.frame(
   flipNum = 1:numFlips,
   coinFlip = rbern(n=numFlips,prob=0.5)
-  ) %>%
+  ) |>
   mutate(headsProportion = cummean(coinFlip))
   
 # Plot results
@@ -158,9 +158,9 @@ flightDF = tibble(
 )
 
 # transform data to give proportion
-propDF = flightDF %>% 
-  group_by(totalPassengers) %>% 
-  summarize(numObserved = n()) %>%
+propDF = flightDF |> 
+  group_by(totalPassengers) |> 
+  summarize(numObserved = n()) |>
   mutate(proportion = numObserved / sum(numObserved))
 
 # plot data with estimates
@@ -178,7 +178,7 @@ $$
 
 ```{r}
 # transform data to give proportion
-propExactDF = tibble(totalPassengers = 0:3) %>%
+propExactDF = tibble(totalPassengers = 0:3) |>
   mutate(proportion = 
            dbinom(x = totalPassengers,
                   size = 3,
@@ -377,9 +377,9 @@ head(samples)
 
 ```{r}
 # Calculate joint probability distribution before seeing the data, and the marginal of theta (prior)
-joint <- samples %>%
-  group_by(theta, x) %>%
-  summarize(count = n(), .groups = "drop") %>%
+joint <- samples |>
+  group_by(theta, x) |>
+  summarize(count = n(), .groups = "drop") |>
   mutate(p = count / sum(count))
 
 joint
@@ -435,10 +435,10 @@ So, after observing a success, the posterior probabilities are approximately 77.
 
 ```{r}
 # Calculate joint probability distribution after seeing the data (x=1), and the marginal of theta (posterior)
-joint <- samples %>%
-  filter(x == 1) %>%
-  group_by(theta, x) %>%
-  summarize(count = n(), .groups = "drop") %>%
+joint <- samples |>
+  filter(x == 1) |>
+  group_by(theta, x) |>
+  summarize(count = n(), .groups = "drop") |>
   mutate(p = count / sum(count))
 
 joint
@@ -595,14 +595,14 @@ dag_create()
 
 ```{r}
 ## adds a node to the list with given description
-dag_create() %>% dag_node("BernoulliRV")
+dag_create() |> dag_node("BernoulliRV")
 ```
 
-The function dag_create() is used to create an empty list object that we will refer to as a *causact_graph*. Subsequently functions like `dag_node()` and `dag_edge()` will take a *causact_graph* object as input, modify them, and provide a *causact_graph* object as output. This feature allows for the chaining (i.e. using `%>%`) of these functions to build up your observational model. Once done building with `dag_create()`, `dag_node()`, and `dag_edge()`, a call to the `dag_render()` function outputs a visual depiction of your *causact graph*.
+The function dag_create() is used to create an empty list object that we will refer to as a *causact_graph*. Subsequently functions like `dag_node()` and `dag_edge()` will take a *causact_graph* object as input, modify them, and provide a *causact_graph* object as output. This feature allows for the chaining (i.e. using `|>`) of these functions to build up your observational model. Once done building with `dag_create()`, `dag_node()`, and `dag_edge()`, a call to the `dag_render()` function outputs a visual depiction of your *causact graph*.
 
 ```{r}
-dag_create() %>% 
-  dag_node("BernoulliRV") %>% 
+dag_create() |> 
+  dag_node("BernoulliRV") |> 
   dag_render()   ## visualize graph
 ```
 
@@ -623,17 +623,17 @@ $$
 The following code uses the `descr` and `label` arguments of the `dag_node()` function to, respectively, provide a long label for your random variable that is easily understood by business stakeholders and a short label that is more for notational/mathematical convenience:
 
 ```{r}
-dag_create() %>%  # just get one node to show
-  dag_node(descr = "Cognition increases", label = "x") %>%
+dag_create() |>  # just get one node to show
+  dag_node(descr = "Cognition increases", label = "x") |>
   dag_render()
 ```
 
 Since, we actually observe this node as data, we use the `data` argument of the `dag_node()` function to specify the observed values:
 
 ```{r}
-dag_create() %>%  # make it an observed node by adding data
+dag_create() |>  # make it an observed node by adding data
   dag_node(descr = "Cognition increases", label = "x", 
-           data = c(1,1,0)) %>%
+           data = c(1,1,0)) |>
   dag_render()
 ```
 
@@ -648,10 +648,10 @@ One goal we often have is to take a sample of data and find plausible parameters
 There is an implicit assumption that all unknown variables will eventually be defined by parent nodes - the `causact` package will not check for this. In the case below, we are specifying a parameter `theta` that will need to eventually be added as a parent node.
 
 ```{r}
-dag_create() %>%  # specify data generating distribution
+dag_create() |>  # specify data generating distribution
   dag_node(descr = "Cognition increases", label = "x", 
            rhs = bernoulli(theta),  ##add distribution 
-           data = c(1,1,0)) %>%
+           data = c(1,1,0)) |>
   dag_render()
 ```
 
@@ -665,14 +665,14 @@ Note, a random variable’s distribution must be part of `causact`. The full lis
 For each unknown argument remaining on the `rhs` of any nodes in your causact graph, one must eventually All unknown rhs arguments for nodes must be defined prior to running any Bayesain computations.define how the unknown argument can be generated. In our data node above, the only unknown argument on the `rhs` is `theta`. We define the generative model for `theta` by making an additional node representing its value:
 
 ```{r}
-dag_create() %>%  
+dag_create() |>  
   dag_node(descr = "Cognition increases", 
            label = "x",
            rhs = bernoulli(theta), # no quotation marks
-           data = c(1,1,0)) %>%
+           data = c(1,1,0)) |>
   dag_node(descr = "Success probability", 
            label = "theta",  # labels needs quotes
-           rhs = uniform(0,1)) %>%
+           rhs = uniform(0,1)) |>
   dag_render()
 ```
 
@@ -690,13 +690,13 @@ where the `theta` object is given its name by the `label = "theta"` argument; wh
 Without a link between `theta` and `x`, one is not creating a properly factorizable directed acyclic graph as is required for specifying a joint distribution. Using the `child` argument of `dag_node`, one can now create the required link between `theta` as a parent node and `theta` as an argument to the distribution of its child node `x`:
 
 ```{r}
-dag_create() %>%  # connect parent to child
+dag_create() |>  # connect parent to child
   dag_node(descr = "Cognition increases", label = "x",
            rhs = bernoulli(theta),
-           data = c(1,1,0)) %>%
+           data = c(1,1,0)) |>
   dag_node(descr = "Success probability", label = "theta",
            rhs = uniform(0,1),
-           child = "x") %>%  ## ADDED LINE TO CREATE EDGE
+           child = "x") |>  ## ADDED LINE TO CREATE EDGE
   dag_render()
 ```
 
@@ -713,23 +713,23 @@ Now we use `dag_numpyro()` function to get a posterior distribution based solely
 ```{r}
 # running Bayesian inference
 # remove dag_render() and save graph object
-graph = dag_create() %>%
+graph = dag_create() |>
   dag_node(descr = "Cognition increases", 
            label = "x",
            rhs = bernoulli(theta),
-           data = c(1,1,0)) %>%
+           data = c(1,1,0)) |>
   dag_node(descr = "Success probability", 
            label = "theta",
            rhs = uniform(0,1),
            child = "x")
 # pass graph to dag_numpyro
-draws = graph %>% dag_numpyro()
+draws = graph |> dag_numpyro()
 ```
 
 After some time, during which `numpyro` computes our posterior Bayesian distribution, we get that distribution as representative sample in an object I typically name `draws` - a data frame of posterior draws that is now useful for computation and plotting. For a quick visual-check that all went well, pass the `draws` data frame to the `dagp_plot()` function to get a quick look at the credible (posterior) values of `theta`:
 
 ```{r}
-draws %>% dagp_plot()  # eyeball P(theta>0.65)
+draws |> dagp_plot()  # eyeball P(theta>0.65)
 ```
 
 the lighter fill indicates a 90% percentile interval where 5% of plausible values are excluded from the left- and right-sides of the colored interval. Consider this range your credilble values for `theta`; hence, our posterior belief is that `theta` is somewhere in the 27% to 90% range. The darker fill within the colored interval indicates a 10% percentile interval; hence, the most likely values of `theta` are centered around 60%. For more customized graphs, please use `bayesplot` or `ggplot2` with `ggdist` with `draws` as the input data.
@@ -774,9 +774,9 @@ With a representative sample of the posterior joint distribution available to us
 
 ```{r}
 ## estimate posterior probability that theta > 50%
-draws %>%
+draws |>
   mutate(indicatorFlag = 
-           ifelse(theta > 0.5, TRUE, FALSE)) %>%
+           ifelse(theta > 0.5, TRUE, FALSE)) |>
   summarize(pctOfThetaVals = mean(indicatorFlag))
 ```
 
@@ -786,10 +786,10 @@ Similarly, we can answer more complicated queries. For example, what is the $P(4
 
 ```{r}
 ## estimate posterior probability that 40% < theta < 60%
-draws %>%
+draws |>
   mutate(indicatorFlag = 
            ifelse(theta > 0.4 & theta < 0.6, 
-                  TRUE, FALSE)) %>%
+                  TRUE, FALSE)) |>
   summarize(pctOfThetaVals = mean(indicatorFlag))
 ```
 
@@ -798,13 +798,13 @@ draws %>%
 A more descriptive output, possibly used for plotting purposes, is shown here:
 
 ```{r}
-draws %>%
+draws |>
   mutate(indicatorFlag = 
            ifelse(theta > 0.5,
                   "theta > 0.5",
-                  "theta <= 0.5")) %>%
-  group_by(indicatorFlag) %>%
-  summarize(countInstances = n()) %>%
+                  "theta <= 0.5")) |>
+  group_by(indicatorFlag) |>
+  summarize(countInstances = n()) |>
   mutate(percentageOfInstances = 
            countInstances / sum(countInstances))
 ```
@@ -840,31 +840,31 @@ We have a probabilistic statement: “the probability that $x$ is greater than o
 ### Credit card example
 
 ```{r}
-graph = dag_create() %>%
+graph = dag_create() |>
   dag_node("Get Card","x",
            rhs = bernoulli(theta),
-           data = carModelDF$getCard) %>%
+           data = carModelDF$getCard) |>
   dag_node("Signup Probability","theta",
            rhs = uniform(0,1),
-           child = "x") %>%
+           child = "x") |>
   dag_plate("Car Model", "y",  
             data = carModelDF$carModel,  
             nodeLabels = "theta", 
-            addDataNode = TRUE)  %>%
+            addDataNode = TRUE)  |>
   dag_plate("Observations", "i",
             nodeLabels = c("x","y"))
 ```
 
 ```{r}
-graph %>% dag_render()
+graph |> dag_render()
 ```
 
 ```{r}
-draws = graph %>% dag_numpyro()
+draws = graph |> dag_numpyro()
 ```
 
 ```{r}
-draws %>% dagp_plot()
+draws |> dagp_plot()
 ```
 
 ## The binomial distribution
@@ -876,11 +876,11 @@ Making a model requires constructing a set of inter-related random variables. So
 2.  *Use latent variables to model uncertainty in the parameters of the distribution family in step 1.* So far, this uncertainty was modeled with the uniform distribution.
 
 ```{r}
-dag_create() %>%
+dag_create() |>
   dag_node(descr = "Bernoulli RV", 
            label = "x",
            rhs = bernoulli(theta),
-           data = c(1,1,0)) %>%
+           data = c(1,1,0)) |>
   dag_node(descr = "Bernoulli parameter RV", 
            label = "theta",
            rhs = uniform(0,1),
@@ -987,14 +987,14 @@ Let's define a generative DAG declaring a $\textrm{Beta}(2,2)$ prior as represen
 data = c(rep(1,20), rep(0,2))
 
 # get representative sample of posterior
-graph = dag_create() %>%
+graph = dag_create() |>
   dag_node("Bernoulli RV","x",
            rhs = bernoulli(theta),
-           data = data) %>%
+           data = data) |>
   dag_node("Bernoulli Parameter RV","theta",
            rhs = beta(2,2),
            child = "x")
-draws = graph %>% dag_numpyro()
+draws = graph |> dag_numpyro()
 ```
 
 ```{r}
@@ -1020,14 +1020,14 @@ If we want to change the prior to something stronger, say a $\textrm{Beta}(50,50
 data = c(rep(1,20), rep(0,2))
 
 # get representative sample of posterior
-graph = dag_create() %>%
+graph = dag_create() |>
   dag_node("Bernoulli RV","x",
            rhs = bernoulli(theta),
-           data = data) %>%
+           data = data) |>
   dag_node("Bernoulli Parameter RV","theta",
            rhs = beta(50,50),
            child = "x")
-draws = graph %>% dag_numpyro()
+draws = graph |> dag_numpyro()
 ```
 
 ```{r}
@@ -1053,15 +1053,15 @@ What's the the posterior probability that Flavor B is preferred to Flavor A? In 
 ```{r}
 data = c(rep(1,36), rep(0,24))
   
-graph = dag_create() %>%
+graph = dag_create() |>
   dag_node(descr = "Flavor B preferred",
            label = "x",
            rhs = bernoulli(theta),
-           data = data) %>%
+           data = data) |>
   dag_node(descr = "Prob flavor B preferred",
            label = "theta",
            rhs = beta(2,2),
-           child = "x") %>%
+           child = "x") |>
   dag_plate(descr = "Observations",
             label = "i",
             nodeLabels = "x")
@@ -1070,11 +1070,11 @@ graph |> dag_render()
 ```
 
 ```{r}
-draws = graph %>% dag_numpyro()
+draws = graph |> dag_numpyro()
 ```
 
 ```{r}
-draws %>% dagp_plot()
+draws |> dagp_plot()
 ```
 
 ```{r}
@@ -1084,3 +1084,385 @@ summarise_draws(draws)
 ```{r}
 mean(draws$theta > 0.5)
 ```
+
+## Parameter estimation
+
+We now look at multiple potential data distributions, comment on the prior distributions that can accompany them, and learn to update parameter uncertainty in response to data.
+
+### Normal distribution
+
+The Normal distribution also known as the Gaussian is perhaps the most well-known distribution. The Normal distribution is typically notated as $N(\mu,\sigma)$ and has two parameters:
+
+1.  $\mu$: the mean or location/central tendency of either your data generating process or your prior uncertainty and,
+
+2.  $\sigma$: the scale or spread/uncertainty around $\mu$.
+
+![](images/clipboard-2877652671.png)
+
+There is an astounding amount of data in the world that appears to be normally distributed.
+
+Due to its prevalance and some nice mathematical properties, this is often the distribution you learn the most about in a statistics course. For us, it is often a good distribution when data or uncertainty is characterized by diminishing probability as potential realizations get further away from the mean. Given the small probability given to outliers, this is not the best distribution to use (at least by itself) if data far from the mean are expected. Even though mathematical theory tells us the support of the Normal distribution is $(-\infty,\infty)$, the probability of deviations far from the mean is practically zero. As such, do not use the Normal distribution by itself to model data with outliers.
+
+The graphical model representing our uncertainty in the generating process for normally distributed data will have three random variables: 1) the observed data $X$, 2) the mean $\mu$, and 3) the standard deviation $\sigma$.
+
+```{r}
+dag_create() |>
+  dag_node(descr = "Normal data",
+           label = "x",
+           rhs = normal(mu, sigma),
+           data = data) |>
+  dag_node(descr = "Location",
+           label = "mu",
+           child = "x") |>
+  dag_node(descr = "Spread",
+           label = "sigma",
+           child = "x") |>
+  dag_render()
+```
+
+and the statistical model with priors:
+
+$$
+\begin{aligned}X \sim& N(\mu,\sigma) \\\mu \sim& \textrm{ Some Prior Distribution} \\\sigma \sim& \textrm{ Some Prior Distribution}\end{aligned}
+$$
+
+where the prior distributions get determined based on the context of the problem under study.
+
+For example, let’s say we are interested in modelling the heights of cherry trees. Even if we do not know much about cherry trees, we can probably be 95% confident that they are somewhere between 1 foot and 99 feet. Hence, we can set up a prior with 95% probability between 1 and 99, i.e. if $X \equiv \textrm{ Cherry Tree Height}$ , then we know that $P(\mu - 2\sigma \leq x \leq \mu + 2 \sigma) \approx 95\%$ . Hence, we can select $\mu \sim N(50,24.5)$. Note this is a prior on the average height, not the individual height of a cherry tree.
+
+Choosing a prior on $\sigma$ is less intuitive. What do we know about the variation in heights of individual trees? Not much. We can probably bound it though. In fact, we can be 100% certain this is greater than zero; no two cherry trees will be the same height. And I am confident, that cherry tree heights will most definitely fall within say 50 feet of the average, so let’s go with a uniform distribution bounded by 0 and 50.
+
+Hence, our statistical model becomes:
+
+$$
+\begin{aligned}X \sim &  N(\mu,\sigma) \\\mu \sim &  N(50,24.5) \\\sigma \sim & \textrm{ Uniform}(0,50)\end{aligned}
+$$
+
+After choosing our prior, we then use data to reallocate plausibility over all our model parameters. There is a built-in dataset called `trees`:
+
+```{r}
+as_tibble(trees)
+```
+
+which we will use in combination with the following generative DAG:
+
+```{r}
+graph = dag_create() |>
+  dag_node("Tree Height","x",
+           rhs = normal(mu,sigma),
+           data = trees$Height) |>
+  dag_node("Avg Cherry Tree Height","mu",
+           rhs = normal(50,24.5),
+           child = "x") |>
+  dag_node("StdDev of Observed Height","sigma",
+           rhs = uniform(0,50),
+           child = "x") |>
+  dag_plate("Observation","i",
+            nodeLabels = "x")
+
+graph |> dag_render()
+```
+
+Calling `dag_numpyro()`, we get our representative sample of the posterior distribution:
+
+```{r}
+draws = graph |> dag_numpyro()
+```
+
+And then, plot the credible values which for our purposes is the 90% percentile interval of the representative sample:
+
+```{r}
+draws |> dagp_plot()
+```
+
+```{r}
+mcmc_areas(draws, pars = "mu")
+```
+
+```{r}
+mcmc_areas(draws, pars = "sigma")
+```
+
+::: callout-note
+REMINDER: the posterior distribution for the average cherry tree height is no longer normally distributed and the standard deviation is no longer uniform. This is a reminder that prior distribution families do not restrict the shape of the posterior distribution.
+:::
+
+We now have insight as to the height of cherry trees as our prior uncertainty is significantly reduced. REMINDER: the posterior distribution for the average cherry tree height is no longer normally distributed and the standard deviation is no longer uniform. This is a reminder that prior distribution families do not restrict the shape of the posterior distribution.Instead of cherry tree heights averaging anywhere from 1 to 99 feet as accomodated by our prior, we now say (roughly speaking) the average height is somewhere in the 70-80 foot range. Instead of the variation in height of trees being plausibly as high as 50 feet, the height of any individual tree is most likely within 15 feet of the average height (i.e. $\approx \mu \pm 2\sigma$).
+
+### Gamma distribution
+
+The support of any random variable with a normal distribution is $(-\infty,\infty)$ which means just about any value is theoretically possible - although values far away from the mean are practically impossible. Sometimes, you want a similar distribution, but one that has constrained support of $(0,\infty)$, i.e. the data is restricted to being strictly positive (even 0 has no density). The Gamma distribution has such support. While the Gamma distribution is often used to fit real-world data like total insurance claims and total rainfall, we will often use this distribution as a prior for another distribution’s parameters. For example, the standard deviation of a normally distributed random variable is strictly positive, so perhaps the Gamma could be appropriate for modelling uncertainty in a standard deviation parameter. Let’s take a deeper look.
+
+The Gamma distribution is a two-parameter distribution notated $\textrm{Gamma}(\alpha,\beta)$. While there other ways to specify the two parameters, we will use the convention that $\alpha$ is a shape parameter and $\beta$ is a rate parameter.
+
+![](images/clipboard-1272439291.png)
+
+When choosing $\alpha$ and $\beta$ so that our prior uncertainty is accurately represented, we will use a few mathematical properties of the Gamma distribution. Assuming $\textrm{Gamma}(\alpha,\beta)$, the following properties are true: $E[X] = \frac{\alpha}{\beta}$ and $\textrm{Var}[X] = \frac{\alpha}{\beta^2}$.
+
+### Student $t$ distribution
+
+For our purposes, the Student $t$ distribution is a normal distribution with fatter tails - i.e. it places more plausibility to values far from the mean than a similar Normal distribution would. Whereas estimates for the mean of a distribution can get pulled towards outliers, the Student $t$ distribution is less susceptible to that issue. Hence, for just about all practical questions, the Student $t$ is a more robust distribution both as likelihood and for expressing prior uncertainty.
+
+The Student $t$ distribution is a three parameter distribution notated $\textrm{Student-t}(\nu,\mu,\sigma)$.
+
+The last two parameters, $\mu$ and $\sigma$, can be interpreted just as they are with the Normal distribution. The first parameter, $\nu$ (greek letter pronounced “new” and phonetically spelled “nu”), refers to the degrees of freedom. Interestingly, as $\nu \rightarrow \infty$ (i.e. as $\nu$ gets large) the Student $t$ distribution and the Normal distribution become identical; in other words, the fatter tails go away. For all of our purposes, we use a gamma prior for representing our uncertianty in as recommended in <https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations>.
+
+![](images/clipboard-3417554164.png)
+
+If we wanted to model the cherry tree heights using a Student $t$ distribution instead of a Normal distribution, the following generative DAG can be used:
+
+```{r}
+graph = dag_create() |>
+  dag_node("Tree Height","x",
+           rhs = student(nu,mu,sigma),
+           data = trees$Height) |>
+  dag_node("Degrees Of Freedom","nu",
+           rhs = gamma(2,0.1),
+           child = "x") |>
+  dag_node("Avg Cherry Tree Height","mu",
+           rhs = normal(50,24.5),
+           child = "x") |>
+  dag_node("StdDev of Observed Height","sigma",
+           rhs = uniform(0,50),
+           child = "x") |>
+  dag_plate("Observation","i",
+            nodeLabels = "x")
+
+graph |> dag_render()
+```
+
+Calling `dag_numpyro()`, we get our representative sample of the posterior distribution:
+
+```{r}
+draws = graph |> dag_numpyro()
+```
+
+And then, plot the credible values to observe very similar results to those using the Normal distribution:
+
+```{r}
+draws |> dagp_plot()
+```
+
+The wide distribution for $\nu$ can be interpreted as saying we do not know how fat the tails for this distribution should be. Which makes sense! You need alot of data to potentially observe outliers, so with only 31 observations our generative model remains uncertain about this degrees of freedom parameter.
+
+To highlight the robustness of the Student $t$ distribution to outliers and the lack of robustness of the Normal distribution, let’s add a mismeasured cherry tree height to the data. While most heights are between 60-80 feet, a mismeasured and truly unbelievable height of 1,000 is added to the data (i.e. `dataWithOutlier = c(trees$Height,1000)`). The figure below shows recalculated posterior densities for both the Normal and Student $t$ priors.
+
+![](images/clipboard-1599969966.png)
+
+The posterior estimate of the mean when using a Normal prior is greatly affected by the outlier data point - the posterior average height gets concentrated around an absurd 100 feet. Whereas, the Student $t$ prior seems to correctly ignore that mismeasured data and concentrates the posterior expectation of average cherry tree height around 76 (as discovered previously). While in this case, ignoring the outliers is desirable and the student t distribution provides a robust method for discounting outliers, all modelling choices should be made so that the posterior distribution accurately reflects your prior expectations of how data should be mixed with prior knowledge.
+
+### Poisson distribution
+
+The Poisson distribution is useful for modelling the number of times an event occurs within a specified time interval. It is a one parameter distribution where if $K \sim \textrm{Poisson}(\lambda)$, then any realization $k$ represents the number of times an event occurred in an interval. The parameter, $\lambda$, has a nice property in that it is a rate parameter representing the average number of times an event occurs in a given interval. Given this interpretability, estimating this parameter is often of interest. A graphical model for estimating a Poisson rate from count data is shown below:
+
+```{r}
+dag_create() |>
+  dag_node(descr = "Count data",
+           label = "k",
+           rhs = poisson(lambda),
+           data = data) |>
+  dag_node(descr = "Rate parameter",
+           label = "lambda",
+           child = "k") |>
+  dag_render()
+```
+
+and a prior for $\lambda$ will be determined by the use case.
+
+::: callout-note
+There are several assumptions about Poisson random variables that dictate the appropriateness of modelling counts using a Poisson random variable. Three of those assumptions are: 1) $k$ is a non-negative integer of counts in a specified time interval, 2) the rate $\lambda$ at which events occur is constant, and 3) the occurrence of one event does not affect the probability of additional events occurring (i.e. events are independent).
+:::
+
+Let’s create a dataframe of tickets issued on Wednesday’s in New York City, and then model the rate of ticketing on Wednesdays using the Poisson likelihood with appropriate prior.
+
+```{r}
+tickets <- ticketsDF |> 
+  mutate(dayOfWeek = wday(date, label = TRUE)) |>
+  filter(dayOfWeek == "Wed") |>
+  group_by(date) |>
+  summarize(numTickets = sum(daily_tickets))
+
+gf_point(numTickets ~ date, data = tickets)
+```
+
+Now, we model these two years of observations using a Poisson likelihood and a prior that reflects beliefs that the average number of tickets issued on any Wednesday in NYC is somewhere between 3,000 and 7,000; for simplicity, let’s choose a $\textrm{Uniform}(3000,7000)$ prior as in the following generative DAG:
+
+```{r}
+graph = dag_create() |>
+  dag_node("Daily # of Tickets","k",
+           rhs = poisson(rate),
+           data = tickets$numTickets) |>
+  dag_node("Avg # Daily Tickets","rate",
+           rhs = uniform(3000,7000),
+           child = "k")
+
+graph |> dag_render()
+```
+
+And extracting our posterior for the average rate of ticket issuance, (NOTE: we use `rate` in code instead of `lambda` due to the latter being a reserved word in Python that will cause issues with using `dag_numpyro()`), yields the following posterior:
+
+```{r}
+draws = graph |> dag_numpyro()
+draws |> dagp_plot()
+```
+
+where we see that that the average rate of ticketing in NYC is somewhere slightly more than 5,000 tickets per day.
+
+## Posterior predictive checks
+
+![](images/clipboard-382068582.png){width="20%"}
+
+> Cobra snakes are known for hypnotizing their prey. Like cobras, Bayesian posteriors can fool you into submission - thinking you have a good model with small uncertainty. The seductiveness of getting results needs to be counter-balanced with a good measure of skepticism. For us, that skepticism manifests as a posterior predictive check - a method of ensuring the posterior distribution can simulate data that is similar to the observed data. We want to ensure our BAW leads to actionable insights, not intoxicating and venomous results.
+
+When modelling real-world data, your generative DAG **never** captures the *true* generating process - the real-world is too messy. However, if your generative DAG can approximate reality, then your model might be useful. Modelling with generative DAGs provides a good starting place from which to confirm, deny, or refine business narratives.
+
+Whether your generative DAG proves successful or not, the modelling process by itself puts you on a good path towards learning more from both the domain expertise of business stakeholders and observed data.
+
+In the last section, we were modelling the daily number of tickets issued in New York City on Wednesdays. We made a dataframe, `tickets`, that had our observed data.
+
+```{r}
+head(tickets)
+```
+
+The generative DAG, which we thought was successful, yielded a posterior distribution with a huge reduction in uncertainty. As we will see, this DAG will turn out to be the hypnotizing cobra I was warning you about. Let’s learn a way of detecting models that are inconsistent with observation.
+
+```{r}
+graph = dag_create() |>
+  dag_node("Daily # of Tickets","k",
+           rhs = poisson(rate),
+           data = tickets$numTickets) |>
+  dag_node("Avg # Daily Tickets","rate",
+           rhs = uniform(3000,7000),
+           child = "k")
+
+graph |> dag_render()
+```
+
+```{r}
+draws = graph |> dag_numpyro()
+draws |> dagp_plot()
+```
+
+Prior uncertainty gave equal plausibility to any number between 3,000 and 7,000. The plausible range for the posterior spans a drastically smaller range, about 5,005 - 5,030. So while this might lead us to think we have a good model, do not be hypnotized into believing it just yet.
+
+### Posterior predictive check
+
+A *posterior predictive check* compares simulated data using a draw of your posterior distribution to the observed data you are modelling - usually represented by the data node at the bottom of your generative DAG. This means we simulate 105 observations of tickets issued, $K$, and compare the simulated data to the 105 real-world observations (two years worth of Wednesday tickets).
+
+Here we use just one draw from the posterior for demonstrating a posterior predictive check. It is actually more appropriate to use dozens of draws to get a feel for the variability within the entire sample of feasible posterior distributions.
+
+Simulating 105 observations requires us to convert the DAGs joint distribution recipe into computer code - we do this going from top to bottom of the graph. At the top of the DAG is `lambda`, so we get a single random draw from the posterior:
+
+```{r}
+rate = draws |>
+  slice_sample(n=1) |>
+  pull(rate)
+
+rate
+```
+
+Continuing the recipe conversion by moving from parent to child, we simulate 105 realizations of using the appropriate `rfoo` functions (`causact` does not support posterior predictive checks yet, so we must use R’s built-in random variable samplers, namely `rpois` for a Poisson random variable):
+
+```{r}
+simData = rpois(n = 105, lambda = rate)
+```
+
+And then, we can compare the histograms of the simulated data and the observed data:
+
+```{r}
+d <- tibble(k_observed = tickets$numTickets, k_simulated = simData)
+
+# make df in tidy format (use tidyr::pivot_longer)
+# so fill can be mapped to observed vs simulated data
+d <- d |> 
+  pivot_longer(cols = c(k_observed,k_simulated),
+               names_to = "type",
+               values_to = "numTickets")
+
+head(d)
+```
+
+```{r}
+gf_density(~ numTickets, data = d, fill = ~ type)
+```
+
+The figure above shows two very different distributions of data. The observed data seemingly can vary from 0 to 8,000 while the simulated data never strays too far from 5,000. The real-world dispersion is not being captured by our generative DAG. Why not?
+
+Our generative DAG wrongly assumes that every Wednesday has the exact same conditions for tickets being issued. In research done by Auerbach (2017) \[“Are New York City Drivers More Likely to Get a Ticket at the End of the Month?” *Significance* 14 (4): 20–25\] based off the same data, they consider holidays and ticket quotas as just some of the other factors driving the variation in tickets issued. To do better, we would need to account for this variation.
+
+Let’s now look at how a posterior predictive check for a good generative DAG might work. Consider the following graphical model from the previous chapter which modeled cherry tree heights:
+
+```{r}
+graph = dag_create() |>
+  dag_node("Tree Height","x",
+           rhs = student(nu,mu,sigma),
+           data = trees$Height) |>
+  dag_node("Degrees Of Freedom","nu",
+           rhs = gamma(2,0.1),
+           child = "x") |>
+  dag_node("Avg Cherry Tree Height","mu",
+           rhs = normal(50,24.5),
+           child = "x") |>
+  dag_node("StdDev of Observed Height","sigma",
+           rhs = uniform(0,50),
+           child = "x") |>
+  dag_plate("Observation","i",
+            nodeLabels = "x")
+
+graph |> dag_render()
+```
+
+We get the posterior as usual:
+
+```{r}
+draws = graph |> dag_numpyro()
+```
+
+And then compare data simulated from a random posterior draw to the observed data. *Actually, we will compare simulated data from several draws, say 20, to get a fuller picture of what the posterior implies for observed data.* By creating multiple simulated datasets, we can see how much the data distributions vary. Observed data is subject to lots of randomness, so we just want to ensure that the observed randomness falls within the realm of our plausible narratives.
+
+Getting the twenty random draws, which is technically a random sample of the posterior representative sample, we place them in `params`:
+
+```{r}
+params = draws |> slice_sample(n=20)
+
+params
+```
+
+Then, for each row of `params`, we will simulate 31 observations. Since we are going to do the same simulation 20 times, once for each row of parameters, I write a function which returns a vector of simulated tree heights. Again, we convert the generative DAG recipe to code that enables our posterior predictive check:
+
+```{r}
+simData = function(nu,mu,sigma) {
+  # use n = 31 because 31 observed heights in the data
+  return(extraDistr::rlst(n = 31, df = nu, mu = mu, sigma = sigma))
+}
+```
+
+N.B.: The Student-t distribution in `causact` is based on the `rlst()` function in the `extraDistr` package.
+
+```{r}
+d <- params |>
+  mutate(simID = row_number()) |>
+  rowwise() |> 
+  mutate(simData = list(simData(nu, mu, sigma))) |> 
+  ungroup()
+
+d
+```
+
+```{r}
+d |>
+  select(simID, simData) |> 
+  unnest_longer(simData) |> # flatten list-column to numeric values
+  gf_dens(~ simData, color = ~ factor(simID)) |> 
+  gf_dens(~ Height, data = trees, linewidth = 2, inherit = FALSE)
+```
+
+This type of spaghetti plot (so-called for obvious reasons), shows 21 different density lines. The twenty light-colored lines each represent a density derived from the 31 points of a single posterior draw. The thicker dark-line is the observed density based on the actual 31 observations. As can be seen, despite the variation across all the lines, the posterior does seem capable of generating data like that which we observed. While this is not a definitive validation of the generative DAG, it is a very good sign that your generative DAG is on the right track.
+
+Despite any posterior predictive success, remain vigilant for factors not included in your generative DAG. Investigating these can lead to substantially more refined narratives of how your data gets generated.
+
+*Do not be a business analyst who only looks at data*, get out and talk to domain experts! See this Twitter thread for a real-world example of why this matters: <https://twitter.com/oziadias/status/1221531710820454400>. It shows how data generated in the real-world of emergency physicians can only be modeled properly when real-world considerations are factored in.
+
+## Decision making
+
+XXX
