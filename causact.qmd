@@ -1465,4 +1465,302 @@ Despite any posterior predictive success, remain vigilant for factors not includ
 
 ## Decision making
 
+Objectives, decisions, and uncertainty are foundational elements of a field known as *decision theory*.
+
+> Boardwalk Bathhouse’s business plan is to bring a private shower facility to the Ocean City, MD boardwalk. Currently, beachgoers visiting for the day have no way to wash off the saltwater and sand from a day at the beach. Nobody wants to get into their car or go out for dinner without a way of freshening up. We just need your help in deciding a location along the 2.5-mile long boardwalk (see Figure [20.1](https://www.causact.com/intro#fig:boardwalk)) to maximize our chances of success. Where should we put our bathhouse?
+
+### Objectives
+
+For Boardwalk Bathhouse, we will keep things simple and claim the business to be profit-maximizing. In more complex situations, we will often find a strong strategy statement provides time-saving clarity around which objectives or performance measures are important to look at.
+
+### Decisions
+
+The following is a first pass at depicting the Boardwalk Bathhouse decision in a model. Decision nodes, shown as rectangles, are just like random variable nodes (ovals) with the exception that their value is controlled by an internal decision-maker. Hence, we get to choose the realization for a decision node and use that to feed information to the children nodes. In this case, we see how the location decision drives revenue, expenses, and subsequently, profit.
+
+```{r}
+graph = dag_create() %>%
+  dag_node("# of Hot Day Beachgoers") %>%
+  dag_node(c("Rent by Location",
+             "Beachgoer Location Probability"),
+           obs = TRUE) %>%
+  dag_node(c("Revenue","Expenses","Profit"),
+           det = TRUE) %>%
+  dag_node("Bathhouse Location",
+           dec = TRUE) %>%
+  dag_edge(from = c("# of Hot Day Beachgoers",
+                    "Beachgoer Location Probability",
+                    "Bathhouse Location"),
+           to = "Revenue") %>%
+  dag_edge(from = c("Bathhouse Location",
+                    "Rent by Location"),
+           to = "Expenses") %>%
+  dag_edge(from = c("Revenue","Expenses"),
+           to = "Profit")
+
+graph %>% dag_render(shortLabel = TRUE)
+```
+
+The top-down narrative is as follows. Boardwalk Beachhouse’s target customers are hot day beachgoers whose exposure to surf, salt, and sand will make them good candidates for wanting to get cleaned up. Since future weather and human behavior are unpredictable, the *\# of Hot Day Beachgoers* is a random variable. These beachgoers spread-out across the 2.5 mile-long beach in a well-studied pattern represented as an observed data node named *Beachgoer Location Probability*. Using the *\# of Hot Day Beachgoers* and *Beachgoer Location Probability* inputs, one can calculate *Revenue* as a function of these inputs and a given bathhouse location. Presumably, beachgoers closer to the *Bathhouse Location* will be more likely to contribute to revenue, but these details are currently omitted from the DAG. Similarly, *Bathhouse Location* also determines expenses, but further details are omitted from the DAG to keep things simpler.
+
+The DAG reveals how we are mapping our location decision and other model inputs to the objectives we care about (revenue, expenses, and profit). Our strategy is similar to that of any other generative DAG in that we seek representative samples of unknown values; only this time, these representative samples are a function of our decision, e.g. *Bathhouse Location*. With representative samples in hand, we will pick the location that offers the best mix of objectives aligned with the firm’s strategy!
+
+### Uncertainty
+
+The only uncertainty in the DAG is how many hot-day beachgoers will visit the beach during the year. Although often possible and sometimes preferable, we will ignore exact mathematical specification of this uncertainty and simply look at uncertainty expressed as a representative sample, e.g. from a marginal, a joint distribution or some past data that we feel is representative of the future. For now, let’s pretend we are interpeting this as a representative sample from a posterior distribution. We can obtain a representative sample of \# of hot-day beachgoers in a season from a vector built into the `causact` package named `totalBeachgoersRepSample`. A quick histogram of this representative sample is shown below:
+
+```{r}
+beachgoerDF = tibble(totalBeachgoers = totalBeachgoersRepSample)
+
+gf_dens(~ totalBeachgoers, data = beachgoerDF)
+```
+
+The plot above tells us to expect around 9,000,000 beach visitors (plus or minus a few million) every year to Ocean City. Boardwalk Bathhouse’s profitability will likely be very dependent on this uncertain number. That should not stop us from making a decision though, we boldy accept this uncertainty and use a generative recipe for analyzing our performance measures of interest.
+
+### Creating one draw of a generative decision DAG
+
+The `causact` package is not developed enough to automate the simulation of generative models that include decisions. So, while we can use `causact` to go from prior to posterior and can use `causact` to create figures for communicating about models with decisions, we need to manually do the simulation from posterior to decision choice.
+
+To aid our introduction, we make the following assumptions:
+
+-   1% of beachgoers within 0.1 miles will become a customer of the bathhouse
+
+-   Each customer will pay \$30.
+
+In a more accurate model, these assumptions would also be turned into distributions that reflect any uncertainty in those assumptions.
+
+Any changes to the above assumptions will alter our expectations and even alter the ideal action. While they should be explored in a real-world analysis, we will again ignore these additional details in favor of focusing on the translation from posterior uncertainty to decision making.
+
+[Generating a potential realization of revenue]{.smallcaps} requires specification of the three parent nodes: 1) *\# of Hot Day Beachgoers*, 2) *Beachgoer Location Probability*, and 3) *Bathhouse Location*. So, let’s create a recipe for calculating each of these parent nodes and then, subsequently calculating *Revenue*.
+
+*\# of Hot Day Beachgoers* is modelled using our representative sample (described above). To get a sample draw, we simply sample a single value from the representative sample as follows:
+
+```{r}
+getNumBeachgoers = function() {
+  sample(totalBeachgoersRepSample,1)
+}
+```
+
+*Beachgoer Location Probability* is considered known and a table of location probability (`beachgoerProb`) by milemarker (`mileMarker`) is in the following built-in `causact` data frame:
+
+```{r}
+beachLocProbDF = beachLocDF %>%
+  select(mileMarker, beachgoerProb)
+
+beachLocProbDF  
+```
+
+*Bathhouse Location* is our decision, we get to choose this. Since the possible locations are already listed in `beachLocProbDF`, we will consider `beachLocProbDF$mileMarker` as our vector of possible locations choices. Hence, we assume there are 26 possible alternatives, one location possibility every tenth of a mile.
+
+In decision theory, you would call the set of possible locations either *alternatives* or *actions*. When reading more about decision theory, knowing these terms will be useful.
+
+*Revenue* is now a function of the three parents. Let’s make the function:
+
+```{r}
+revenueFun = function(numBeachgoers,
+                      locProbDF,
+                      bathhouseLocation) {
+  ## get number of potential customers exiting 
+  ## beach within 0.1 miles of bathhouse
+  numPotentialCustomers = locProbDF %>%
+    filter(abs(mileMarker - bathhouseLocation) <= 0.1) %>%
+    mutate(custByMileMark = beachgoerProb * numBeachgoers) %>%
+    summarize(potentialCustomers = sum(custByMileMark)) %>%
+    pull(potentialCustomers)
+  
+  ## capturing 1% of potential customers on average
+  ## means actual customers are a binomial rv
+  ## hence, use the rbinom() function (see the
+  ##representing uncertainty chapter for more info).
+  numCust = rbinom(n = 1,
+                   size = as.integer(numPotentialCustomers),
+                   prob = 0.01)
+  
+  ## $30 per customer
+  revenue = numCust * 30
+  
+  return(revenue)
+}
+```
+
+Testing the revenue function above, we use numbers that let us easily verify the math. Assume there are 1,000,000 beachgoers, we know from `beachLocDF` that mile marker 0 will see around 13% of those beachgoers and 1% of those exiting beachgoers turn into customers (about 1,300 customers). At \$30 per customer, revenue of around \$39,000 is expected. Let’s see if the function works:
+
+```{r}
+revenueFun(numBeachgoers = 1000000,
+           locProbDF = beachLocProbDF,
+           bathhouseLocation = 0)
+```
+
+Close enough for me. Yay!
+
+*Rent by Location* is considered known and a table of rent expenses (`beachgoerProb`) by milemarker (`mileMarker`) is in the following built-in `causact` data frame:
+
+```{r}
+beachExpDF = beachLocDF %>%
+  select(mileMarker,expenseEst)
+
+beachExpDF
+```
+
+*Expenses* is a function of its two parents. Let’s make the function:
+
+```{r}
+expenseFun = function(locExpenseDF,bathhouseLocation) {
+  ## get number of customers exiting at each mile marker
+  ## by taking total # of beachgoers and using location
+  ## probability to break the number down by mileMarker
+  beachExpDF = locExpenseDF %>%
+    filter(mileMarker == bathhouseLocation)
+  
+  return(beachExpDF$expenseEst)
+}
+```
+
+Let’s make sure this function works. We know from `beachLocDF` that mile marker 0 will have expenses of \$160,000. Testing this:
+
+```{r}
+expenseFun(locExpenseDF = beachExpDF,
+           bathhouseLocation = 0)
+```
+
+And now this works too.
+
+Last node to simulate in our top-down approach to computing a joint realization of the generative decision DAG is the profit node. We use a typical formula for profit:
+
+$$
+\textrm{Profit} = \textrm{Revenue} - \textrm{Expenses}
+$$
+
+which we will model computationally in the next section where we simulate a draw from the generative decision DAG.
+
+### Simulating a possible outcome
+
+With all the building blocks in place, we create a function that takes a potential decision and simulates one realization of revenue, expenses, and profit. It will return a single row as a data frame representing the draw.
+
+```{r}
+generativeRecipe = function(bathhouseLocation) {
+  numBeachgoers = getNumBeachgoers()
+  locProbDF = beachLocDF %>%
+    select(mileMarker,beachgoerProb)
+  # bathhouseLocation is passed as input to function
+  locExpenseDF = beachLocDF %>% 
+    select(mileMarker,expenseEst)
+  rev = revenueFun(numBeachgoers,
+                   locProbDF,
+                   bathhouseLocation) 
+  exp = expenseFun(locExpenseDF,
+                   bathhouseLocation)
+  profit = rev - exp
+  decDrawsDF = tibble(locDec = bathhouseLocation,
+                      numBeachgoers = numBeachgoers,
+                      rev = rev,
+                      exp = exp,
+                      profit = profit)
+  return(decDrawsDF)
+}
+```
+
+Let's test it:
+
+```{r}
+generativeRecipe(bathhouseLocation = 1)
+```
+
+This also looks good. Yay again!!
+
+### Simulating a range of outcomes for all possible decisions
+
+Here we will use two `for` loops to get a representative sample of performance measures for each of the possible bathouse locations. The first loop, the *outer loop*, loops over possible decisions. The second loop, the *inner loop*, will then get 30 sample draws for a given decision. This code may take a minute or two; we have dramatically sacrificed computational speed in this chapter to keep the code intuitive (the end of this chapter offers guidance on making this simulation faster):
+
+```{r}
+numSimsPerDec = 30 # number of sims per decision
+
+## create empty dataframe to store results
+decDrawsDF = tibble()
+
+for (bathLoc in beachLocDF$mileMarker) {
+  for (simNum in 1:numSimsPerDec) {
+    drawDF = generativeRecipe(
+      bathhouseLocation = bathLoc)
+    decDrawsDF = bind_rows(decDrawsDF, drawDF)
+  } # end inner loop
+} # end outer loop
+```
+
+And then, we do a quick visual to inspect our decisions:
+
+```{r}
+gf_point(profit ~ locDec, data = decDrawsDF)
+```
+
+From visual inspection of the figure above, there are certain locations that seem really good. However, be very skeptical of yourself - “can 30 points really capture a representative sample?” I would argue NO. We will see how to more quickly generate 1,000’s of samples in a subsequent section.
+
+To demonstrate incorporating additional complexity into our simulation, let’s assume we only have \$100,000 to invest, that disqualifies many of the locations. The change to incorporate this is common; manipulate the dataframe to eliminate the infeasible choices and then view the results.
+
+```{r}
+gf_point(profit ~ locDec, data = decDrawsDF %>% filter(exp < 100000))
+```
+
+Under the budget constraint, locating at mile markers 1.9 (expenses of \$96,000) or at mile marker 2.0 (expenses are \$76,000) now provide the best outcomes.
+
+### Faster code
+
+```{r}
+# take nSims as argument
+fasterGenRecipe = function(nSims) {
+  fastGenDF = tibble(
+    simNum = 1:nSims,
+    numBeachgoers =
+      sample(totalBeachgoersRepSample,nSims)) %>%
+    crossing(beachLocDF) %>%
+    mutate(numAtMileMarker = 
+             numBeachgoers * beachgoerProb) %>%
+    select(simNum,numAtMileMarker,
+           mileMarker,expenseEst,numAtMileMarker) %>%
+    group_by(simNum) %>% arrange(mileMarker) %>%
+    mutate(numPotentialCust = 
+             lag(numAtMileMarker, default = 0) +
+             numAtMileMarker + 
+             lead(numAtMileMarker, default = 0)) %>%
+    ungroup() %>% arrange(simNum,mileMarker) %>%
+    mutate(estRevenue = 
+             30 * numPotentialCust * 0.01) %>%
+    mutate(profit = estRevenue - expenseEst) %>%
+    select(simNum,mileMarker,profit,
+           estRevenue,expenseEst)
+  return(fastGenDF)
+}
+```
+
+```{r}
+# separate out caption for readability of code
+plotCaption = 
+  "Median Profit (dark point) and 90% Credible Interval"
+
+fasterGenRecipe(4000) %>% group_by(mileMarker) %>%
+        summarize(q05 = stats::quantile(profit,0.05),
+                  q50 = stats::quantile(profit,0.50),
+                  q95 = stats::quantile(profit,0.95),
+                  expense = first(expenseEst)) %>%
+        arrange(mileMarker) %>%
+        ggplot(aes(y = mileMarker, yend = mileMarker)) +
+        geom_linerange(aes(xmin = q05, xmax = q95), 
+                     size = 4, color = "#5f9ea0") +
+        geom_point(aes(x = q50), 
+                   size = 4, color = "#11114e") +
+        geom_text(aes(x = (expense - 120000), 
+                  label = 
+                    paste0("Annual Expense = ",
+                           scales::dollar(expense))),
+                  size = 3, color = "darkred") +
+        labs(y = "Bathhouse Location Milemarker",
+             x = "Annual Profit($)",
+             caption = plotCaption) + 
+  scale_x_continuous(limits = c(-50000,450000),
+                     labels = scales::dollar_format())
+```
+
+I encourage you to avoid presenting point estimates whenever possible. They are so incomplete in the information provided and will make your predictions look foolish as the most likely scenario is still rarely the scenario one sees play out in the business world. In the previous figure, declaring mile marker 1.5 to bring profit of \$150,000 does not convey the real uncertainty where very different profit outcomes are possible - anywhere from \$120,000 to over \$200,000 are all very plausible outcomes.
+
+## A simple linear model
+
 XXX

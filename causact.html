@@ -168,7 +168,16 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#posterior-predictive-check" id="toc-posterior-predictive-check" class="nav-link" data-scroll-target="#posterior-predictive-check">Posterior predictive check</a></li>
   </ul></li>
-  <li><a href="#decision-making" id="toc-decision-making" class="nav-link" data-scroll-target="#decision-making">Decision making</a></li>
+  <li><a href="#decision-making" id="toc-decision-making" class="nav-link" data-scroll-target="#decision-making">Decision making</a>
+  <ul class="collapse">
+  <li><a href="#objectives" id="toc-objectives" class="nav-link" data-scroll-target="#objectives">Objectives</a></li>
+  <li><a href="#decisions" id="toc-decisions" class="nav-link" data-scroll-target="#decisions">Decisions</a></li>
+  <li><a href="#uncertainty" id="toc-uncertainty" class="nav-link" data-scroll-target="#uncertainty">Uncertainty</a></li>
+  <li><a href="#creating-one-draw-of-a-generative-decision-dag" id="toc-creating-one-draw-of-a-generative-decision-dag" class="nav-link" data-scroll-target="#creating-one-draw-of-a-generative-decision-dag">Creating one draw of a generative decision DAG</a></li>
+  <li><a href="#simulating-a-possible-outcome" id="toc-simulating-a-possible-outcome" class="nav-link" data-scroll-target="#simulating-a-possible-outcome">Simulating a possible outcome</a></li>
+  <li><a href="#simulating-a-range-of-outcomes-for-all-possible-decisions" id="toc-simulating-a-range-of-outcomes-for-all-possible-decisions" class="nav-link" data-scroll-target="#simulating-a-range-of-outcomes-for-all-possible-decisions">Simulating a range of outcomes for all possible decisions</a></li>
+  <li><a href="#faster-code" id="toc-faster-code" class="nav-link" data-scroll-target="#faster-code">Faster code</a></li>
+  </ul></li>
   </ul>
 </nav>
 </div>
@@ -2700,7 +2709,561 @@ Note
 </section>
 <section id="decision-making" class="level2">
 <h2 class="anchored" data-anchor-id="decision-making">Decision making</h2>
-<p>XXX</p>
+<p>Objectives, decisions, and uncertainty are foundational elements of a field known as <em>decision theory</em>.</p>
+<blockquote class="blockquote">
+<p>Boardwalk Bathhouse’s business plan is to bring a private shower facility to the Ocean City, MD boardwalk. Currently, beachgoers visiting for the day have no way to wash off the saltwater and sand from a day at the beach. Nobody wants to get into their car or go out for dinner without a way of freshening up. We just need your help in deciding a location along the 2.5-mile long boardwalk (see Figure <a href="https://www.causact.com/intro#fig:boardwalk">20.1</a>) to maximize our chances of success. Where should we put our bathhouse?</p>
+</blockquote>
+<section id="objectives" class="level3">
+<h3 class="anchored" data-anchor-id="objectives">Objectives</h3>
+<p>For Boardwalk Bathhouse, we will keep things simple and claim the business to be profit-maximizing. In more complex situations, we will often find a strong strategy statement provides time-saving clarity around which objectives or performance measures are important to look at.</p>
+</section>
+<section id="decisions" class="level3">
+<h3 class="anchored" data-anchor-id="decisions">Decisions</h3>
+<p>The following is a first pass at depicting the Boardwalk Bathhouse decision in a model. Decision nodes, shown as rectangles, are just like random variable nodes (ovals) with the exception that their value is controlled by an internal decision-maker. Hence, we get to choose the realization for a decision node and use that to feed information to the children nodes. In this case, we see how the location decision drives revenue, expenses, and subsequently, profit.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb97"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb97-1"><a href="#cb97-1" aria-hidden="true" tabindex="-1"></a>graph <span class="ot">=</span> <span class="fu">dag_create</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb97-2"><a href="#cb97-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"# of Hot Day Beachgoers"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb97-3"><a href="#cb97-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="fu">c</span>(<span class="st">"Rent by Location"</span>,</span>
+<span id="cb97-4"><a href="#cb97-4" aria-hidden="true" tabindex="-1"></a>             <span class="st">"Beachgoer Location Probability"</span>),</span>
+<span id="cb97-5"><a href="#cb97-5" aria-hidden="true" tabindex="-1"></a>           <span class="at">obs =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb97-6"><a href="#cb97-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="fu">c</span>(<span class="st">"Revenue"</span>,<span class="st">"Expenses"</span>,<span class="st">"Profit"</span>),</span>
+<span id="cb97-7"><a href="#cb97-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">det =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb97-8"><a href="#cb97-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Bathhouse Location"</span>,</span>
+<span id="cb97-9"><a href="#cb97-9" aria-hidden="true" tabindex="-1"></a>           <span class="at">dec =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb97-10"><a href="#cb97-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_edge</span>(<span class="at">from =</span> <span class="fu">c</span>(<span class="st">"# of Hot Day Beachgoers"</span>,</span>
+<span id="cb97-11"><a href="#cb97-11" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"Beachgoer Location Probability"</span>,</span>
+<span id="cb97-12"><a href="#cb97-12" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"Bathhouse Location"</span>),</span>
+<span id="cb97-13"><a href="#cb97-13" aria-hidden="true" tabindex="-1"></a>           <span class="at">to =</span> <span class="st">"Revenue"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb97-14"><a href="#cb97-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_edge</span>(<span class="at">from =</span> <span class="fu">c</span>(<span class="st">"Bathhouse Location"</span>,</span>
+<span id="cb97-15"><a href="#cb97-15" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"Rent by Location"</span>),</span>
+<span id="cb97-16"><a href="#cb97-16" aria-hidden="true" tabindex="-1"></a>           <span class="at">to =</span> <span class="st">"Expenses"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb97-17"><a href="#cb97-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_edge</span>(<span class="at">from =</span> <span class="fu">c</span>(<span class="st">"Revenue"</span>,<span class="st">"Expenses"</span>),</span>
+<span id="cb97-18"><a href="#cb97-18" aria-hidden="true" tabindex="-1"></a>           <span class="at">to =</span> <span class="st">"Profit"</span>)</span>
+<span id="cb97-19"><a href="#cb97-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb97-20"><a href="#cb97-20" aria-hidden="true" tabindex="-1"></a>graph <span class="sc">%&gt;%</span> <span class="fu">dag_render</span>(<span class="at">shortLabel =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="grViz html-widget html-fill-item" id="htmlwidget-c16a4cadc5f8c7ab9ff9" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-c16a4cadc5f8c7ab9ff9">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\n  \"1\" [label = \"# of Hot Day Beachgoers\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"2\" [label = \"Rent by Location\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"3\" [label = \"Beachgoer Location\nProbability\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"4\" [label = \"Revenue\", shape = \"ellipse\", peripheries = \"2\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"5\" [label = \"Expenses\", shape = \"ellipse\", peripheries = \"2\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"6\" [label = \"Profit\", shape = \"ellipse\", peripheries = \"2\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"7\" [label = \"Bathhouse Location\", shape = \"rect\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n\"1\"->\"4\" [style = \"solid\"] \n\"3\"->\"4\" [style = \"solid\"] \n\"7\"->\"4\" [style = \"solid\"] \n\"7\"->\"5\" [style = \"solid\"] \n\"2\"->\"5\" [style = \"solid\"] \n\"4\"->\"6\" [style = \"solid\"] \n\"5\"->\"6\" [style = \"solid\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<p>The top-down narrative is as follows. Boardwalk Beachhouse’s target customers are hot day beachgoers whose exposure to surf, salt, and sand will make them good candidates for wanting to get cleaned up. Since future weather and human behavior are unpredictable, the <em># of Hot Day Beachgoers</em> is a random variable. These beachgoers spread-out across the 2.5 mile-long beach in a well-studied pattern represented as an observed data node named <em>Beachgoer Location Probability</em>. Using the <em># of Hot Day Beachgoers</em> and <em>Beachgoer Location Probability</em> inputs, one can calculate <em>Revenue</em> as a function of these inputs and a given bathhouse location. Presumably, beachgoers closer to the <em>Bathhouse Location</em> will be more likely to contribute to revenue, but these details are currently omitted from the DAG. Similarly, <em>Bathhouse Location</em> also determines expenses, but further details are omitted from the DAG to keep things simpler.</p>
+<p>The DAG reveals how we are mapping our location decision and other model inputs to the objectives we care about (revenue, expenses, and profit). Our strategy is similar to that of any other generative DAG in that we seek representative samples of unknown values; only this time, these representative samples are a function of our decision, e.g.&nbsp;<em>Bathhouse Location</em>. With representative samples in hand, we will pick the location that offers the best mix of objectives aligned with the firm’s strategy!</p>
+</section>
+<section id="uncertainty" class="level3">
+<h3 class="anchored" data-anchor-id="uncertainty">Uncertainty</h3>
+<p>The only uncertainty in the DAG is how many hot-day beachgoers will visit the beach during the year. Although often possible and sometimes preferable, we will ignore exact mathematical specification of this uncertainty and simply look at uncertainty expressed as a representative sample, e.g.&nbsp;from a marginal, a joint distribution or some past data that we feel is representative of the future. For now, let’s pretend we are interpeting this as a representative sample from a posterior distribution. We can obtain a representative sample of # of hot-day beachgoers in a season from a vector built into the <code>causact</code> package named <code>totalBeachgoersRepSample</code>. A quick histogram of this representative sample is shown below:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb98"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb98-1"><a href="#cb98-1" aria-hidden="true" tabindex="-1"></a>beachgoerDF <span class="ot">=</span> <span class="fu">tibble</span>(<span class="at">totalBeachgoers =</span> totalBeachgoersRepSample)</span>
+<span id="cb98-2"><a href="#cb98-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb98-3"><a href="#cb98-3" aria-hidden="true" tabindex="-1"></a><span class="fu">gf_dens</span>(<span class="sc">~</span> totalBeachgoers, <span class="at">data =</span> beachgoerDF)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-84-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The plot above tells us to expect around 9,000,000 beach visitors (plus or minus a few million) every year to Ocean City. Boardwalk Bathhouse’s profitability will likely be very dependent on this uncertain number. That should not stop us from making a decision though, we boldy accept this uncertainty and use a generative recipe for analyzing our performance measures of interest.</p>
+</section>
+<section id="creating-one-draw-of-a-generative-decision-dag" class="level3">
+<h3 class="anchored" data-anchor-id="creating-one-draw-of-a-generative-decision-dag">Creating one draw of a generative decision DAG</h3>
+<p>The <code>causact</code> package is not developed enough to automate the simulation of generative models that include decisions. So, while we can use <code>causact</code> to go from prior to posterior and can use <code>causact</code> to create figures for communicating about models with decisions, we need to manually do the simulation from posterior to decision choice.</p>
+<p>To aid our introduction, we make the following assumptions:</p>
+<ul>
+<li><p>1% of beachgoers within 0.1 miles will become a customer of the bathhouse</p></li>
+<li><p>Each customer will pay $30.</p></li>
+</ul>
+<p>In a more accurate model, these assumptions would also be turned into distributions that reflect any uncertainty in those assumptions.</p>
+<p>Any changes to the above assumptions will alter our expectations and even alter the ideal action. While they should be explored in a real-world analysis, we will again ignore these additional details in favor of focusing on the translation from posterior uncertainty to decision making.</p>
+<p><span class="smallcaps">Generating a potential realization of revenue</span> requires specification of the three parent nodes: 1) <em># of Hot Day Beachgoers</em>, 2) <em>Beachgoer Location Probability</em>, and 3) <em>Bathhouse Location</em>. So, let’s create a recipe for calculating each of these parent nodes and then, subsequently calculating <em>Revenue</em>.</p>
+<p><em># of Hot Day Beachgoers</em> is modelled using our representative sample (described above). To get a sample draw, we simply sample a single value from the representative sample as follows:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb99"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb99-1"><a href="#cb99-1" aria-hidden="true" tabindex="-1"></a>getNumBeachgoers <span class="ot">=</span> <span class="cf">function</span>() {</span>
+<span id="cb99-2"><a href="#cb99-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sample</span>(totalBeachgoersRepSample,<span class="dv">1</span>)</span>
+<span id="cb99-3"><a href="#cb99-3" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><em>Beachgoer Location Probability</em> is considered known and a table of location probability (<code>beachgoerProb</code>) by milemarker (<code>mileMarker</code>) is in the following built-in <code>causact</code> data frame:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb100"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb100-1"><a href="#cb100-1" aria-hidden="true" tabindex="-1"></a>beachLocProbDF <span class="ot">=</span> beachLocDF <span class="sc">%&gt;%</span></span>
+<span id="cb100-2"><a href="#cb100-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(mileMarker, beachgoerProb)</span>
+<span id="cb100-3"><a href="#cb100-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb100-4"><a href="#cb100-4" aria-hidden="true" tabindex="-1"></a>beachLocProbDF  </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="kable-table">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;">mileMarker</th>
+<th style="text-align: right;">beachgoerProb</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0.0</td>
+<td style="text-align: right;">0.060</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.1</td>
+<td style="text-align: right;">0.070</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2</td>
+<td style="text-align: right;">0.050</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.3</td>
+<td style="text-align: right;">0.050</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.4</td>
+<td style="text-align: right;">0.045</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.5</td>
+<td style="text-align: right;">0.040</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.6</td>
+<td style="text-align: right;">0.020</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.7</td>
+<td style="text-align: right;">0.030</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.8</td>
+<td style="text-align: right;">0.040</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.9</td>
+<td style="text-align: right;">0.040</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1.0</td>
+<td style="text-align: right;">0.030</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1.1</td>
+<td style="text-align: right;">0.020</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1.2</td>
+<td style="text-align: right;">0.010</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1.3</td>
+<td style="text-align: right;">0.020</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1.4</td>
+<td style="text-align: right;">0.025</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1.5</td>
+<td style="text-align: right;">0.030</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1.6</td>
+<td style="text-align: right;">0.030</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1.7</td>
+<td style="text-align: right;">0.035</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1.8</td>
+<td style="text-align: right;">0.035</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1.9</td>
+<td style="text-align: right;">0.040</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2.0</td>
+<td style="text-align: right;">0.045</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2.1</td>
+<td style="text-align: right;">0.045</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2.2</td>
+<td style="text-align: right;">0.050</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2.3</td>
+<td style="text-align: right;">0.055</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2.4</td>
+<td style="text-align: right;">0.050</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2.5</td>
+<td style="text-align: right;">0.050</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<p><em>Bathhouse Location</em> is our decision, we get to choose this. Since the possible locations are already listed in <code>beachLocProbDF</code>, we will consider <code>beachLocProbDF$mileMarker</code> as our vector of possible locations choices. Hence, we assume there are 26 possible alternatives, one location possibility every tenth of a mile.</p>
+<p>In decision theory, you would call the set of possible locations either <em>alternatives</em> or <em>actions</em>. When reading more about decision theory, knowing these terms will be useful.</p>
+<p><em>Revenue</em> is now a function of the three parents. Let’s make the function:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb101"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb101-1"><a href="#cb101-1" aria-hidden="true" tabindex="-1"></a>revenueFun <span class="ot">=</span> <span class="cf">function</span>(numBeachgoers,</span>
+<span id="cb101-2"><a href="#cb101-2" aria-hidden="true" tabindex="-1"></a>                      locProbDF,</span>
+<span id="cb101-3"><a href="#cb101-3" aria-hidden="true" tabindex="-1"></a>                      bathhouseLocation) {</span>
+<span id="cb101-4"><a href="#cb101-4" aria-hidden="true" tabindex="-1"></a>  <span class="do">## get number of potential customers exiting </span></span>
+<span id="cb101-5"><a href="#cb101-5" aria-hidden="true" tabindex="-1"></a>  <span class="do">## beach within 0.1 miles of bathhouse</span></span>
+<span id="cb101-6"><a href="#cb101-6" aria-hidden="true" tabindex="-1"></a>  numPotentialCustomers <span class="ot">=</span> locProbDF <span class="sc">%&gt;%</span></span>
+<span id="cb101-7"><a href="#cb101-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(<span class="fu">abs</span>(mileMarker <span class="sc">-</span> bathhouseLocation) <span class="sc">&lt;=</span> <span class="fl">0.1</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb101-8"><a href="#cb101-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">custByMileMark =</span> beachgoerProb <span class="sc">*</span> numBeachgoers) <span class="sc">%&gt;%</span></span>
+<span id="cb101-9"><a href="#cb101-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarize</span>(<span class="at">potentialCustomers =</span> <span class="fu">sum</span>(custByMileMark)) <span class="sc">%&gt;%</span></span>
+<span id="cb101-10"><a href="#cb101-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pull</span>(potentialCustomers)</span>
+<span id="cb101-11"><a href="#cb101-11" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb101-12"><a href="#cb101-12" aria-hidden="true" tabindex="-1"></a>  <span class="do">## capturing 1% of potential customers on average</span></span>
+<span id="cb101-13"><a href="#cb101-13" aria-hidden="true" tabindex="-1"></a>  <span class="do">## means actual customers are a binomial rv</span></span>
+<span id="cb101-14"><a href="#cb101-14" aria-hidden="true" tabindex="-1"></a>  <span class="do">## hence, use the rbinom() function (see the</span></span>
+<span id="cb101-15"><a href="#cb101-15" aria-hidden="true" tabindex="-1"></a>  <span class="do">##representing uncertainty chapter for more info).</span></span>
+<span id="cb101-16"><a href="#cb101-16" aria-hidden="true" tabindex="-1"></a>  numCust <span class="ot">=</span> <span class="fu">rbinom</span>(<span class="at">n =</span> <span class="dv">1</span>,</span>
+<span id="cb101-17"><a href="#cb101-17" aria-hidden="true" tabindex="-1"></a>                   <span class="at">size =</span> <span class="fu">as.integer</span>(numPotentialCustomers),</span>
+<span id="cb101-18"><a href="#cb101-18" aria-hidden="true" tabindex="-1"></a>                   <span class="at">prob =</span> <span class="fl">0.01</span>)</span>
+<span id="cb101-19"><a href="#cb101-19" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb101-20"><a href="#cb101-20" aria-hidden="true" tabindex="-1"></a>  <span class="do">## $30 per customer</span></span>
+<span id="cb101-21"><a href="#cb101-21" aria-hidden="true" tabindex="-1"></a>  revenue <span class="ot">=</span> numCust <span class="sc">*</span> <span class="dv">30</span></span>
+<span id="cb101-22"><a href="#cb101-22" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb101-23"><a href="#cb101-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(revenue)</span>
+<span id="cb101-24"><a href="#cb101-24" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Testing the revenue function above, we use numbers that let us easily verify the math. Assume there are 1,000,000 beachgoers, we know from <code>beachLocDF</code> that mile marker 0 will see around 13% of those beachgoers and 1% of those exiting beachgoers turn into customers (about 1,300 customers). At $30 per customer, revenue of around $39,000 is expected. Let’s see if the function works:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb102"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb102-1"><a href="#cb102-1" aria-hidden="true" tabindex="-1"></a><span class="fu">revenueFun</span>(<span class="at">numBeachgoers =</span> <span class="dv">1000000</span>,</span>
+<span id="cb102-2"><a href="#cb102-2" aria-hidden="true" tabindex="-1"></a>           <span class="at">locProbDF =</span> beachLocProbDF,</span>
+<span id="cb102-3"><a href="#cb102-3" aria-hidden="true" tabindex="-1"></a>           <span class="at">bathhouseLocation =</span> <span class="dv">0</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 38910</code></pre>
+</div>
+</div>
+<p>Close enough for me. Yay!</p>
+<p><em>Rent by Location</em> is considered known and a table of rent expenses (<code>beachgoerProb</code>) by milemarker (<code>mileMarker</code>) is in the following built-in <code>causact</code> data frame:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb104"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb104-1"><a href="#cb104-1" aria-hidden="true" tabindex="-1"></a>beachExpDF <span class="ot">=</span> beachLocDF <span class="sc">%&gt;%</span></span>
+<span id="cb104-2"><a href="#cb104-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(mileMarker,expenseEst)</span>
+<span id="cb104-3"><a href="#cb104-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb104-4"><a href="#cb104-4" aria-hidden="true" tabindex="-1"></a>beachExpDF</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="kable-table">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;">mileMarker</th>
+<th style="text-align: right;">expenseEst</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0.0</td>
+<td style="text-align: right;">160000</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.1</td>
+<td style="text-align: right;">160000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2</td>
+<td style="text-align: right;">140000</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.3</td>
+<td style="text-align: right;">140000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.4</td>
+<td style="text-align: right;">140000</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.5</td>
+<td style="text-align: right;">140000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.6</td>
+<td style="text-align: right;">110000</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.7</td>
+<td style="text-align: right;">110000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.8</td>
+<td style="text-align: right;">110000</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.9</td>
+<td style="text-align: right;">110000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1.0</td>
+<td style="text-align: right;">110000</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1.1</td>
+<td style="text-align: right;">100000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1.2</td>
+<td style="text-align: right;">100000</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1.3</td>
+<td style="text-align: right;">100000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1.4</td>
+<td style="text-align: right;">80000</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1.5</td>
+<td style="text-align: right;">80000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1.6</td>
+<td style="text-align: right;">76000</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1.7</td>
+<td style="text-align: right;">76000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1.8</td>
+<td style="text-align: right;">76000</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1.9</td>
+<td style="text-align: right;">76000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2.0</td>
+<td style="text-align: right;">96000</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2.1</td>
+<td style="text-align: right;">102000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2.2</td>
+<td style="text-align: right;">108000</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2.3</td>
+<td style="text-align: right;">112000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2.4</td>
+<td style="text-align: right;">120000</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2.5</td>
+<td style="text-align: right;">140000</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<p><em>Expenses</em> is a function of its two parents. Let’s make the function:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb105"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb105-1"><a href="#cb105-1" aria-hidden="true" tabindex="-1"></a>expenseFun <span class="ot">=</span> <span class="cf">function</span>(locExpenseDF,bathhouseLocation) {</span>
+<span id="cb105-2"><a href="#cb105-2" aria-hidden="true" tabindex="-1"></a>  <span class="do">## get number of customers exiting at each mile marker</span></span>
+<span id="cb105-3"><a href="#cb105-3" aria-hidden="true" tabindex="-1"></a>  <span class="do">## by taking total # of beachgoers and using location</span></span>
+<span id="cb105-4"><a href="#cb105-4" aria-hidden="true" tabindex="-1"></a>  <span class="do">## probability to break the number down by mileMarker</span></span>
+<span id="cb105-5"><a href="#cb105-5" aria-hidden="true" tabindex="-1"></a>  beachExpDF <span class="ot">=</span> locExpenseDF <span class="sc">%&gt;%</span></span>
+<span id="cb105-6"><a href="#cb105-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(mileMarker <span class="sc">==</span> bathhouseLocation)</span>
+<span id="cb105-7"><a href="#cb105-7" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb105-8"><a href="#cb105-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(beachExpDF<span class="sc">$</span>expenseEst)</span>
+<span id="cb105-9"><a href="#cb105-9" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Let’s make sure this function works. We know from <code>beachLocDF</code> that mile marker 0 will have expenses of $160,000. Testing this:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb106"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb106-1"><a href="#cb106-1" aria-hidden="true" tabindex="-1"></a><span class="fu">expenseFun</span>(<span class="at">locExpenseDF =</span> beachExpDF,</span>
+<span id="cb106-2"><a href="#cb106-2" aria-hidden="true" tabindex="-1"></a>           <span class="at">bathhouseLocation =</span> <span class="dv">0</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 160000</code></pre>
+</div>
+</div>
+<p>And now this works too.</p>
+<p>Last node to simulate in our top-down approach to computing a joint realization of the generative decision DAG is the profit node. We use a typical formula for profit:</p>
+<p><span class="math display">\[
+\textrm{Profit} = \textrm{Revenue} - \textrm{Expenses}
+\]</span></p>
+<p>which we will model computationally in the next section where we simulate a draw from the generative decision DAG.</p>
+</section>
+<section id="simulating-a-possible-outcome" class="level3">
+<h3 class="anchored" data-anchor-id="simulating-a-possible-outcome">Simulating a possible outcome</h3>
+<p>With all the building blocks in place, we create a function that takes a potential decision and simulates one realization of revenue, expenses, and profit. It will return a single row as a data frame representing the draw.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb108"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb108-1"><a href="#cb108-1" aria-hidden="true" tabindex="-1"></a>generativeRecipe <span class="ot">=</span> <span class="cf">function</span>(bathhouseLocation) {</span>
+<span id="cb108-2"><a href="#cb108-2" aria-hidden="true" tabindex="-1"></a>  numBeachgoers <span class="ot">=</span> <span class="fu">getNumBeachgoers</span>()</span>
+<span id="cb108-3"><a href="#cb108-3" aria-hidden="true" tabindex="-1"></a>  locProbDF <span class="ot">=</span> beachLocDF <span class="sc">%&gt;%</span></span>
+<span id="cb108-4"><a href="#cb108-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(mileMarker,beachgoerProb)</span>
+<span id="cb108-5"><a href="#cb108-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># bathhouseLocation is passed as input to function</span></span>
+<span id="cb108-6"><a href="#cb108-6" aria-hidden="true" tabindex="-1"></a>  locExpenseDF <span class="ot">=</span> beachLocDF <span class="sc">%&gt;%</span> </span>
+<span id="cb108-7"><a href="#cb108-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(mileMarker,expenseEst)</span>
+<span id="cb108-8"><a href="#cb108-8" aria-hidden="true" tabindex="-1"></a>  rev <span class="ot">=</span> <span class="fu">revenueFun</span>(numBeachgoers,</span>
+<span id="cb108-9"><a href="#cb108-9" aria-hidden="true" tabindex="-1"></a>                   locProbDF,</span>
+<span id="cb108-10"><a href="#cb108-10" aria-hidden="true" tabindex="-1"></a>                   bathhouseLocation) </span>
+<span id="cb108-11"><a href="#cb108-11" aria-hidden="true" tabindex="-1"></a>  exp <span class="ot">=</span> <span class="fu">expenseFun</span>(locExpenseDF,</span>
+<span id="cb108-12"><a href="#cb108-12" aria-hidden="true" tabindex="-1"></a>                   bathhouseLocation)</span>
+<span id="cb108-13"><a href="#cb108-13" aria-hidden="true" tabindex="-1"></a>  profit <span class="ot">=</span> rev <span class="sc">-</span> exp</span>
+<span id="cb108-14"><a href="#cb108-14" aria-hidden="true" tabindex="-1"></a>  decDrawsDF <span class="ot">=</span> <span class="fu">tibble</span>(<span class="at">locDec =</span> bathhouseLocation,</span>
+<span id="cb108-15"><a href="#cb108-15" aria-hidden="true" tabindex="-1"></a>                      <span class="at">numBeachgoers =</span> numBeachgoers,</span>
+<span id="cb108-16"><a href="#cb108-16" aria-hidden="true" tabindex="-1"></a>                      <span class="at">rev =</span> rev,</span>
+<span id="cb108-17"><a href="#cb108-17" aria-hidden="true" tabindex="-1"></a>                      <span class="at">exp =</span> exp,</span>
+<span id="cb108-18"><a href="#cb108-18" aria-hidden="true" tabindex="-1"></a>                      <span class="at">profit =</span> profit)</span>
+<span id="cb108-19"><a href="#cb108-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(decDrawsDF)</span>
+<span id="cb108-20"><a href="#cb108-20" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Let’s test it:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb109"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb109-1"><a href="#cb109-1" aria-hidden="true" tabindex="-1"></a><span class="fu">generativeRecipe</span>(<span class="at">bathhouseLocation =</span> <span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="kable-table">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;">locDec</th>
+<th style="text-align: right;">numBeachgoers</th>
+<th style="text-align: right;">rev</th>
+<th style="text-align: right;">exp</th>
+<th style="text-align: right;">profit</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">8960000</td>
+<td style="text-align: right;">187320</td>
+<td style="text-align: right;">110000</td>
+<td style="text-align: right;">77320</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<p>This also looks good. Yay again!!</p>
+</section>
+<section id="simulating-a-range-of-outcomes-for-all-possible-decisions" class="level3">
+<h3 class="anchored" data-anchor-id="simulating-a-range-of-outcomes-for-all-possible-decisions">Simulating a range of outcomes for all possible decisions</h3>
+<p>Here we will use two <code>for</code> loops to get a representative sample of performance measures for each of the possible bathouse locations. The first loop, the <em>outer loop</em>, loops over possible decisions. The second loop, the <em>inner loop</em>, will then get 30 sample draws for a given decision. This code may take a minute or two; we have dramatically sacrificed computational speed in this chapter to keep the code intuitive (the end of this chapter offers guidance on making this simulation faster):</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb110"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb110-1"><a href="#cb110-1" aria-hidden="true" tabindex="-1"></a>numSimsPerDec <span class="ot">=</span> <span class="dv">30</span> <span class="co"># number of sims per decision</span></span>
+<span id="cb110-2"><a href="#cb110-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb110-3"><a href="#cb110-3" aria-hidden="true" tabindex="-1"></a><span class="do">## create empty dataframe to store results</span></span>
+<span id="cb110-4"><a href="#cb110-4" aria-hidden="true" tabindex="-1"></a>decDrawsDF <span class="ot">=</span> <span class="fu">tibble</span>()</span>
+<span id="cb110-5"><a href="#cb110-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb110-6"><a href="#cb110-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (bathLoc <span class="cf">in</span> beachLocDF<span class="sc">$</span>mileMarker) {</span>
+<span id="cb110-7"><a href="#cb110-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (simNum <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>numSimsPerDec) {</span>
+<span id="cb110-8"><a href="#cb110-8" aria-hidden="true" tabindex="-1"></a>    drawDF <span class="ot">=</span> <span class="fu">generativeRecipe</span>(</span>
+<span id="cb110-9"><a href="#cb110-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">bathhouseLocation =</span> bathLoc)</span>
+<span id="cb110-10"><a href="#cb110-10" aria-hidden="true" tabindex="-1"></a>    decDrawsDF <span class="ot">=</span> <span class="fu">bind_rows</span>(decDrawsDF, drawDF)</span>
+<span id="cb110-11"><a href="#cb110-11" aria-hidden="true" tabindex="-1"></a>  } <span class="co"># end inner loop</span></span>
+<span id="cb110-12"><a href="#cb110-12" aria-hidden="true" tabindex="-1"></a>} <span class="co"># end outer loop</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>And then, we do a quick visual to inspect our decisions:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb111"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb111-1"><a href="#cb111-1" aria-hidden="true" tabindex="-1"></a><span class="fu">gf_point</span>(profit <span class="sc">~</span> locDec, <span class="at">data =</span> decDrawsDF)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-95-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>From visual inspection of the figure above, there are certain locations that seem really good. However, be very skeptical of yourself - “can 30 points really capture a representative sample?” I would argue NO. We will see how to more quickly generate 1,000’s of samples in a subsequent section.</p>
+<p>To demonstrate incorporating additional complexity into our simulation, let’s assume we only have $100,000 to invest, that disqualifies many of the locations. The change to incorporate this is common; manipulate the dataframe to eliminate the infeasible choices and then view the results.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb112"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb112-1"><a href="#cb112-1" aria-hidden="true" tabindex="-1"></a><span class="fu">gf_point</span>(profit <span class="sc">~</span> locDec, <span class="at">data =</span> decDrawsDF <span class="sc">%&gt;%</span> <span class="fu">filter</span>(exp <span class="sc">&lt;</span> <span class="dv">100000</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-96-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Under the budget constraint, locating at mile markers 1.9 (expenses of $96,000) or at mile marker 2.0 (expenses are $76,000) now provide the best outcomes.</p>
+</section>
+<section id="faster-code" class="level3">
+<h3 class="anchored" data-anchor-id="faster-code">Faster code</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb113"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb113-1"><a href="#cb113-1" aria-hidden="true" tabindex="-1"></a><span class="co"># take nSims as argument</span></span>
+<span id="cb113-2"><a href="#cb113-2" aria-hidden="true" tabindex="-1"></a>fasterGenRecipe <span class="ot">=</span> <span class="cf">function</span>(nSims) {</span>
+<span id="cb113-3"><a href="#cb113-3" aria-hidden="true" tabindex="-1"></a>  fastGenDF <span class="ot">=</span> <span class="fu">tibble</span>(</span>
+<span id="cb113-4"><a href="#cb113-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">simNum =</span> <span class="dv">1</span><span class="sc">:</span>nSims,</span>
+<span id="cb113-5"><a href="#cb113-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">numBeachgoers =</span></span>
+<span id="cb113-6"><a href="#cb113-6" aria-hidden="true" tabindex="-1"></a>      <span class="fu">sample</span>(totalBeachgoersRepSample,nSims)) <span class="sc">%&gt;%</span></span>
+<span id="cb113-7"><a href="#cb113-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">crossing</span>(beachLocDF) <span class="sc">%&gt;%</span></span>
+<span id="cb113-8"><a href="#cb113-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">numAtMileMarker =</span> </span>
+<span id="cb113-9"><a href="#cb113-9" aria-hidden="true" tabindex="-1"></a>             numBeachgoers <span class="sc">*</span> beachgoerProb) <span class="sc">%&gt;%</span></span>
+<span id="cb113-10"><a href="#cb113-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(simNum,numAtMileMarker,</span>
+<span id="cb113-11"><a href="#cb113-11" aria-hidden="true" tabindex="-1"></a>           mileMarker,expenseEst,numAtMileMarker) <span class="sc">%&gt;%</span></span>
+<span id="cb113-12"><a href="#cb113-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(simNum) <span class="sc">%&gt;%</span> <span class="fu">arrange</span>(mileMarker) <span class="sc">%&gt;%</span></span>
+<span id="cb113-13"><a href="#cb113-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">numPotentialCust =</span> </span>
+<span id="cb113-14"><a href="#cb113-14" aria-hidden="true" tabindex="-1"></a>             <span class="fu">lag</span>(numAtMileMarker, <span class="at">default =</span> <span class="dv">0</span>) <span class="sc">+</span></span>
+<span id="cb113-15"><a href="#cb113-15" aria-hidden="true" tabindex="-1"></a>             numAtMileMarker <span class="sc">+</span> </span>
+<span id="cb113-16"><a href="#cb113-16" aria-hidden="true" tabindex="-1"></a>             <span class="fu">lead</span>(numAtMileMarker, <span class="at">default =</span> <span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb113-17"><a href="#cb113-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span> <span class="fu">arrange</span>(simNum,mileMarker) <span class="sc">%&gt;%</span></span>
+<span id="cb113-18"><a href="#cb113-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">estRevenue =</span> </span>
+<span id="cb113-19"><a href="#cb113-19" aria-hidden="true" tabindex="-1"></a>             <span class="dv">30</span> <span class="sc">*</span> numPotentialCust <span class="sc">*</span> <span class="fl">0.01</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb113-20"><a href="#cb113-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">profit =</span> estRevenue <span class="sc">-</span> expenseEst) <span class="sc">%&gt;%</span></span>
+<span id="cb113-21"><a href="#cb113-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(simNum,mileMarker,profit,</span>
+<span id="cb113-22"><a href="#cb113-22" aria-hidden="true" tabindex="-1"></a>           estRevenue,expenseEst)</span>
+<span id="cb113-23"><a href="#cb113-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(fastGenDF)</span>
+<span id="cb113-24"><a href="#cb113-24" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb114"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb114-1"><a href="#cb114-1" aria-hidden="true" tabindex="-1"></a><span class="co"># separate out caption for readability of code</span></span>
+<span id="cb114-2"><a href="#cb114-2" aria-hidden="true" tabindex="-1"></a>plotCaption <span class="ot">=</span> </span>
+<span id="cb114-3"><a href="#cb114-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Median Profit (dark point) and 90% Credible Interval"</span></span>
+<span id="cb114-4"><a href="#cb114-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb114-5"><a href="#cb114-5" aria-hidden="true" tabindex="-1"></a><span class="fu">fasterGenRecipe</span>(<span class="dv">4000</span>) <span class="sc">%&gt;%</span> <span class="fu">group_by</span>(mileMarker) <span class="sc">%&gt;%</span></span>
+<span id="cb114-6"><a href="#cb114-6" aria-hidden="true" tabindex="-1"></a>        <span class="fu">summarize</span>(<span class="at">q05 =</span> stats<span class="sc">::</span><span class="fu">quantile</span>(profit,<span class="fl">0.05</span>),</span>
+<span id="cb114-7"><a href="#cb114-7" aria-hidden="true" tabindex="-1"></a>                  <span class="at">q50 =</span> stats<span class="sc">::</span><span class="fu">quantile</span>(profit,<span class="fl">0.50</span>),</span>
+<span id="cb114-8"><a href="#cb114-8" aria-hidden="true" tabindex="-1"></a>                  <span class="at">q95 =</span> stats<span class="sc">::</span><span class="fu">quantile</span>(profit,<span class="fl">0.95</span>),</span>
+<span id="cb114-9"><a href="#cb114-9" aria-hidden="true" tabindex="-1"></a>                  <span class="at">expense =</span> <span class="fu">first</span>(expenseEst)) <span class="sc">%&gt;%</span></span>
+<span id="cb114-10"><a href="#cb114-10" aria-hidden="true" tabindex="-1"></a>        <span class="fu">arrange</span>(mileMarker) <span class="sc">%&gt;%</span></span>
+<span id="cb114-11"><a href="#cb114-11" aria-hidden="true" tabindex="-1"></a>        <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">y =</span> mileMarker, <span class="at">yend =</span> mileMarker)) <span class="sc">+</span></span>
+<span id="cb114-12"><a href="#cb114-12" aria-hidden="true" tabindex="-1"></a>        <span class="fu">geom_linerange</span>(<span class="fu">aes</span>(<span class="at">xmin =</span> q05, <span class="at">xmax =</span> q95), </span>
+<span id="cb114-13"><a href="#cb114-13" aria-hidden="true" tabindex="-1"></a>                     <span class="at">size =</span> <span class="dv">4</span>, <span class="at">color =</span> <span class="st">"#5f9ea0"</span>) <span class="sc">+</span></span>
+<span id="cb114-14"><a href="#cb114-14" aria-hidden="true" tabindex="-1"></a>        <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">x =</span> q50), </span>
+<span id="cb114-15"><a href="#cb114-15" aria-hidden="true" tabindex="-1"></a>                   <span class="at">size =</span> <span class="dv">4</span>, <span class="at">color =</span> <span class="st">"#11114e"</span>) <span class="sc">+</span></span>
+<span id="cb114-16"><a href="#cb114-16" aria-hidden="true" tabindex="-1"></a>        <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">x =</span> (expense <span class="sc">-</span> <span class="dv">120000</span>), </span>
+<span id="cb114-17"><a href="#cb114-17" aria-hidden="true" tabindex="-1"></a>                  <span class="at">label =</span> </span>
+<span id="cb114-18"><a href="#cb114-18" aria-hidden="true" tabindex="-1"></a>                    <span class="fu">paste0</span>(<span class="st">"Annual Expense = "</span>,</span>
+<span id="cb114-19"><a href="#cb114-19" aria-hidden="true" tabindex="-1"></a>                           scales<span class="sc">::</span><span class="fu">dollar</span>(expense))),</span>
+<span id="cb114-20"><a href="#cb114-20" aria-hidden="true" tabindex="-1"></a>                  <span class="at">size =</span> <span class="dv">3</span>, <span class="at">color =</span> <span class="st">"darkred"</span>) <span class="sc">+</span></span>
+<span id="cb114-21"><a href="#cb114-21" aria-hidden="true" tabindex="-1"></a>        <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">"Bathhouse Location Milemarker"</span>,</span>
+<span id="cb114-22"><a href="#cb114-22" aria-hidden="true" tabindex="-1"></a>             <span class="at">x =</span> <span class="st">"Annual Profit($)"</span>,</span>
+<span id="cb114-23"><a href="#cb114-23" aria-hidden="true" tabindex="-1"></a>             <span class="at">caption =</span> plotCaption) <span class="sc">+</span> </span>
+<span id="cb114-24"><a href="#cb114-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">50000</span>,<span class="dv">450000</span>),</span>
+<span id="cb114-25"><a href="#cb114-25" aria-hidden="true" tabindex="-1"></a>                     <span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">dollar_format</span>())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
+ℹ Please use `linewidth` instead.</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-98-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>I encourage you to avoid presenting point estimates whenever possible. They are so incomplete in the information provided and will make your predictions look foolish as the most likely scenario is still rarely the scenario one sees play out in the business world. In the previous figure, declaring mile marker 1.5 to bring profit of $150,000 does not convey the real uncertainty where very different profit outcomes are possible - anywhere from $120,000 to over $200,000 are all very plausible outcomes.</p>
+</section>
 </section>
 
 </main>
