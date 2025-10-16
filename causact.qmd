@@ -723,31 +723,31 @@ graph = dag_create() |>
            rhs = uniform(0,1),
            child = "x")
 # pass graph to dag_numpyro
-draws = graph |> dag_numpyro()
+drawsDF = graph |> dag_numpyro()
 ```
 
-After some time, during which `numpyro` computes our posterior Bayesian distribution, we get that distribution as representative sample in an object I typically name `draws` - a data frame of posterior draws that is now useful for computation and plotting. For a quick visual-check that all went well, pass the `draws` data frame to the `dagp_plot()` function to get a quick look at the credible (posterior) values of `theta`:
+After some time, during which `numpyro` computes our posterior Bayesian distribution, we get that distribution as representative sample in an object I typically name `drawsDF` - a data frame of posterior draws that is now useful for computation and plotting. For a quick visual-check that all went well, pass the `drawsDF` data frame to the `dagp_plot()` function to get a quick look at the credible (posterior) values of `theta`:
 
 ```{r}
-draws |> dagp_plot()  # eyeball P(theta>0.65)
+drawsDF |> dagp_plot()  # eyeball P(theta>0.65)
 ```
 
-the lighter fill indicates a 90% percentile interval where 5% of plausible values are excluded from the left- and right-sides of the colored interval. Consider this range your credilble values for `theta`; hence, our posterior belief is that `theta` is somewhere in the 27% to 90% range. The darker fill within the colored interval indicates a 10% percentile interval; hence, the most likely values of `theta` are centered around 60%. For more customized graphs, please use `bayesplot` or `ggplot2` with `ggdist` with `draws` as the input data.
+the lighter fill indicates a 90% percentile interval where 5% of plausible values are excluded from the left- and right-sides of the colored interval. Consider this range your credilble values for `theta`; hence, our posterior belief is that `theta` is somewhere in the 27% to 90% range. The darker fill within the colored interval indicates a 10% percentile interval; hence, the most likely values of `theta` are centered around 60%. For more customized graphs, please use `bayesplot` or `ggplot2` with `ggdist` with `drawsDF` as the input data.
 
 ### Investigating the posterior distribution
 
-The object we named `draws` is our posterior distribution after `numpyro` automated Bayes rule for us. The posterior distribution is expressed as a representative sample of all unobserved nodes/parameters; it is not a named probability distribution. Each row of `draws` is a single individual sample or realization of the posterior distribution. Each row is referred to as a **draw** from the posterior.
+The object we named `drawsDF` is our posterior distribution after `numpyro` automated Bayes rule for us. The posterior distribution is expressed as a representative sample of all unobserved nodes/parameters; it is not a named probability distribution. Each row of `drawsDF` is a single individual sample or realization of the posterior distribution. Each row is referred to as a **draw** from the posterior.
 
-To see a representative sample of the posterior distribution, we access the R object, `draws`, created above. The `theta` column of `draws` contains our representative sample of the posterior distribution. In this case, that representative sample includes 4,000 samples of `theta`. Recall that our prior belief about `theta`, the probability of success, was uniformly distributed between 0 and 1 - all values equally likely. Now, after observing 2 successes and 1 failure, our plausibility beliefs should favor $\theta$ values away from 0 and 1 and more towards middle values as we learned both success and failure are possible; but we let Bayes rule (via `numpyro`) do this plausibility updating for us.
+To see a representative sample of the posterior distribution, we access the R object, `drawsDF`, created above. The `theta` column of `drawsDF` contains our representative sample of the posterior distribution. In this case, that representative sample includes 4,000 samples of `theta`. Recall that our prior belief about `theta`, the probability of success, was uniformly distributed between 0 and 1 - all values equally likely. Now, after observing 2 successes and 1 failure, our plausibility beliefs should favor $\theta$ values away from 0 and 1 and more towards middle values as we learned both success and failure are possible; but we let Bayes rule (via `numpyro`) do this plausibility updating for us.
 
 ```{r}
-head(draws)
+head(drawsDF)
 ```
 
 Using `bayesplot`, we can visualize how plausibility was reallocated from our uniform prior of $\theta$ in light of the observed data; in other words, we can see the posterior distribution for $\theta$ after observing 2 out of 3 stores increase sales:
 
 ```{r}
-mcmc_areas(draws)
+mcmc_areas(drawsDF)
 ```
 
 Notice how values of $\theta$ are no longer uniformly distributed; values from 50% to 75% are represented more frequently.
@@ -758,23 +758,23 @@ Some other takeaways from the plot regarding plausibility reallocation:
 
 -   Very high values of $\theta$ are less plausbile; one failure in three tries is not likely to occur if $\theta$ were to be super-high.
 
--   Our best guess of $\theta$ went from 0.5 (i.e. the mean of theta when uniformly distributed) to `mean(draws$theta) =` 0.60.
+-   Our best guess of $\theta$ went from 0.5 (i.e. the mean of theta when uniformly distributed) to `mean(drawsDF$theta) =` 0.60.
 
 -   We are still very unsure about the "true" value of $\theta$ after only 3 observations. We can see this by looking at quantiles of the posterior distribution suggesting a 90% percentile interval from 0.25 to 0.91:
 
 ```{r}
-summarize_draws(draws)
+summarize_draws(drawsDF)
 ```
 
 This continued large band of uncertainty is a good thing. We only have three data points, we should not be very confident in our point estimate of $\theta$. If we want a tighter interval of uncertainty, then we simply need to get more data.
 
 ### Making probabilistic statements with indicator functions
 
-With a representative sample of the posterior joint distribution available to us, namely `draws`, we can expand on the strategies of the “Joint Distributions Tell Us Everything” section to make probabilistic statements from representative samples. For example, we might be curious to know $P(\theta \gt 50\%)$. Using indicator functions, simple functions that equal 1 when a criteria is met and 0 when it is not, we can get our estimate of $P(\theta \gt 50\%)$:
+With a representative sample of the posterior joint distribution available to us, namely `drawsDF`, we can expand on the strategies of the “Joint Distributions Tell Us Everything” section to make probabilistic statements from representative samples. For example, we might be curious to know $P(\theta \gt 50\%)$. Using indicator functions, simple functions that equal 1 when a criteria is met and 0 when it is not, we can get our estimate of $P(\theta \gt 50\%)$:
 
 ```{r}
 ## estimate posterior probability that theta > 50%
-draws |>
+drawsDF |>
   mutate(indicatorFlag = 
            ifelse(theta > 0.5, TRUE, FALSE)) |>
   summarize(pctOfThetaVals = mean(indicatorFlag))
@@ -786,7 +786,7 @@ Similarly, we can answer more complicated queries. For example, what is the $P(4
 
 ```{r}
 ## estimate posterior probability that 40% < theta < 60%
-draws |>
+drawsDF |>
   mutate(indicatorFlag = 
            ifelse(theta > 0.4 & theta < 0.6, 
                   TRUE, FALSE)) |>
@@ -798,7 +798,7 @@ draws |>
 A more descriptive output, possibly used for plotting purposes, is shown here:
 
 ```{r}
-draws |>
+drawsDF |>
   mutate(indicatorFlag = 
            ifelse(theta > 0.5,
                   "theta > 0.5",
@@ -860,11 +860,11 @@ graph |> dag_render()
 ```
 
 ```{r}
-draws = graph |> dag_numpyro()
+drawsDF = graph |> dag_numpyro()
 ```
 
 ```{r}
-draws |> dagp_plot()
+drawsDF |> dagp_plot()
 ```
 
 ## The binomial distribution
@@ -879,10 +879,10 @@ Making a model requires constructing a set of inter-related random variables. So
 dag_create() |>
   dag_node(descr = "Bernoulli RV", 
            label = "x",
-           rhs = bernoulli(theta),
+           rhs = bernoulli(pi),
            data = c(1,1,0)) |>
   dag_node(descr = "Bernoulli parameter RV", 
-           label = "theta",
+           label = "pi",
            rhs = uniform(0,1),
            child = "x") |>
   dag_render()
@@ -994,15 +994,15 @@ graph = dag_create() |>
   dag_node("Bernoulli Parameter RV","theta",
            rhs = beta(2,2),
            child = "x")
-draws = graph |> dag_numpyro()
+drawsDF = graph |> dag_numpyro()
 ```
 
 ```{r}
-mcmc_areas(draws)
+mcmc_areas(drawsDF)
 ```
 
 ```{r}
-ggplot(draws, aes(x = theta)) +
+ggplot(drawsDF, aes(x = theta)) +
   geom_area(stat = "function",
             fun = dbeta, 
             args = list(2,2),
@@ -1027,11 +1027,11 @@ graph = dag_create() |>
   dag_node("Bernoulli Parameter RV","theta",
            rhs = beta(50,50),
            child = "x")
-draws = graph |> dag_numpyro()
+drawsDF = graph |> dag_numpyro()
 ```
 
 ```{r}
-ggplot(draws, aes(x = theta)) +
+ggplot(drawsDF, aes(x = theta)) +
   geom_area(stat = "function",
             fun = dbeta, 
             args = list(50,50),
@@ -1070,19 +1070,19 @@ graph |> dag_render()
 ```
 
 ```{r}
-draws = graph |> dag_numpyro()
+drawsDF = graph |> dag_numpyro()
 ```
 
 ```{r}
-draws |> dagp_plot()
+drawsDF |> dagp_plot()
 ```
 
 ```{r}
-summarise_draws(draws)
+summarise_draws(drawsDF)
 ```
 
 ```{r}
-mean(draws$theta > 0.5)
+mean(drawsDF$theta > 0.5)
 ```
 
 ## Parameter estimation
@@ -1166,21 +1166,21 @@ graph |> dag_render()
 Calling `dag_numpyro()`, we get our representative sample of the posterior distribution:
 
 ```{r}
-draws = graph |> dag_numpyro()
+drawsDF = graph |> dag_numpyro()
 ```
 
 And then, plot the credible values which for our purposes is the 90% percentile interval of the representative sample:
 
 ```{r}
-draws |> dagp_plot()
+drawsDF |> dagp_plot()
 ```
 
 ```{r}
-mcmc_areas(draws, pars = "mu")
+mcmc_areas(drawsDF, pars = "mu")
 ```
 
 ```{r}
-mcmc_areas(draws, pars = "sigma")
+mcmc_areas(drawsDF, pars = "sigma")
 ```
 
 ::: callout-note
@@ -1234,13 +1234,13 @@ graph |> dag_render()
 Calling `dag_numpyro()`, we get our representative sample of the posterior distribution:
 
 ```{r}
-draws = graph |> dag_numpyro()
+drawsDF = graph |> dag_numpyro()
 ```
 
 And then, plot the credible values to observe very similar results to those using the Normal distribution:
 
 ```{r}
-draws |> dagp_plot()
+drawsDF |> dagp_plot()
 ```
 
 The wide distribution for $\nu$ can be interpreted as saying we do not know how fat the tails for this distribution should be. Which makes sense! You need alot of data to potentially observe outliers, so with only 31 observations our generative model remains uncertain about this degrees of freedom parameter.
@@ -1302,8 +1302,8 @@ graph |> dag_render()
 And extracting our posterior for the average rate of ticket issuance, (NOTE: we use `rate` in code instead of `lambda` due to the latter being a reserved word in Python that will cause issues with using `dag_numpyro()`), yields the following posterior:
 
 ```{r}
-draws = graph |> dag_numpyro()
-draws |> dagp_plot()
+drawsDF = graph |> dag_numpyro()
+drawsDF |> dagp_plot()
 ```
 
 where we see that that the average rate of ticketing in NYC is somewhere slightly more than 5,000 tickets per day.
@@ -1339,8 +1339,8 @@ graph |> dag_render()
 ```
 
 ```{r}
-draws = graph |> dag_numpyro()
-draws |> dagp_plot()
+drawsDF = graph |> dag_numpyro()
+drawsDF |> dagp_plot()
 ```
 
 Prior uncertainty gave equal plausibility to any number between 3,000 and 7,000. The plausible range for the posterior spans a drastically smaller range, about 5,005 - 5,030. So while this might lead us to think we have a good model, do not be hypnotized into believing it just yet.
@@ -1354,7 +1354,7 @@ Here we use just one draw from the posterior for demonstrating a posterior predi
 Simulating 105 observations requires us to convert the DAGs joint distribution recipe into computer code - we do this going from top to bottom of the graph. At the top of the DAG is `lambda`, so we get a single random draw from the posterior:
 
 ```{r}
-rate = draws |>
+rate = drawsDF |>
   slice_sample(n=1) |>
   pull(rate)
 
@@ -1415,7 +1415,7 @@ graph |> dag_render()
 We get the posterior as usual:
 
 ```{r}
-draws = graph |> dag_numpyro()
+drawsDF = graph |> dag_numpyro()
 ```
 
 And then compare data simulated from a random posterior draw to the observed data. *Actually, we will compare simulated data from several draws, say 20, to get a fuller picture of what the posterior implies for observed data.* By creating multiple simulated datasets, we can see how much the data distributions vary. Observed data is subject to lots of randomness, so we just want to ensure that the observed randomness falls within the realm of our plausible narratives.
@@ -1423,7 +1423,7 @@ And then compare data simulated from a random posterior draw to the observed dat
 Getting the twenty random draws, which is technically a random sample of the posterior representative sample, we place them in `params`:
 
 ```{r}
-params = draws |> slice_sample(n=20)
+params = drawsDF |> slice_sample(n=20)
 
 params
 ```
@@ -1478,26 +1478,26 @@ For Boardwalk Bathhouse, we will keep things simple and claim the business to be
 The following is a first pass at depicting the Boardwalk Bathhouse decision in a model. Decision nodes, shown as rectangles, are just like random variable nodes (ovals) with the exception that their value is controlled by an internal decision-maker. Hence, we get to choose the realization for a decision node and use that to feed information to the children nodes. In this case, we see how the location decision drives revenue, expenses, and subsequently, profit.
 
 ```{r}
-graph = dag_create() %>%
-  dag_node("# of Hot Day Beachgoers") %>%
+graph = dag_create() |>
+  dag_node("# of Hot Day Beachgoers") |>
   dag_node(c("Rent by Location",
              "Beachgoer Location Probability"),
-           obs = TRUE) %>%
+           obs = TRUE) |>
   dag_node(c("Revenue","Expenses","Profit"),
-           det = TRUE) %>%
+           det = TRUE) |>
   dag_node("Bathhouse Location",
-           dec = TRUE) %>%
+           dec = TRUE) |>
   dag_edge(from = c("# of Hot Day Beachgoers",
                     "Beachgoer Location Probability",
                     "Bathhouse Location"),
-           to = "Revenue") %>%
+           to = "Revenue") |>
   dag_edge(from = c("Bathhouse Location",
                     "Rent by Location"),
-           to = "Expenses") %>%
+           to = "Expenses") |>
   dag_edge(from = c("Revenue","Expenses"),
            to = "Profit")
 
-graph %>% dag_render(shortLabel = TRUE)
+graph |> dag_render(shortLabel = TRUE)
 ```
 
 The top-down narrative is as follows. Boardwalk Beachhouse’s target customers are hot day beachgoers whose exposure to surf, salt, and sand will make them good candidates for wanting to get cleaned up. Since future weather and human behavior are unpredictable, the *\# of Hot Day Beachgoers* is a random variable. These beachgoers spread-out across the 2.5 mile-long beach in a well-studied pattern represented as an observed data node named *Beachgoer Location Probability*. Using the *\# of Hot Day Beachgoers* and *Beachgoer Location Probability* inputs, one can calculate *Revenue* as a function of these inputs and a given bathhouse location. Presumably, beachgoers closer to the *Bathhouse Location* will be more likely to contribute to revenue, but these details are currently omitted from the DAG. Similarly, *Bathhouse Location* also determines expenses, but further details are omitted from the DAG to keep things simpler.
@@ -1543,7 +1543,7 @@ getNumBeachgoers = function() {
 *Beachgoer Location Probability* is considered known and a table of location probability (`beachgoerProb`) by milemarker (`mileMarker`) is in the following built-in `causact` data frame:
 
 ```{r}
-beachLocProbDF = beachLocDF %>%
+beachLocProbDF = beachLocDF |>
   select(mileMarker, beachgoerProb)
 
 beachLocProbDF  
@@ -1561,10 +1561,10 @@ revenueFun = function(numBeachgoers,
                       bathhouseLocation) {
   ## get number of potential customers exiting 
   ## beach within 0.1 miles of bathhouse
-  numPotentialCustomers = locProbDF %>%
-    filter(abs(mileMarker - bathhouseLocation) <= 0.1) %>%
-    mutate(custByMileMark = beachgoerProb * numBeachgoers) %>%
-    summarize(potentialCustomers = sum(custByMileMark)) %>%
+  numPotentialCustomers = locProbDF |>
+    filter(abs(mileMarker - bathhouseLocation) <= 0.1) |>
+    mutate(custByMileMark = beachgoerProb * numBeachgoers) |>
+    summarize(potentialCustomers = sum(custByMileMark)) |>
     pull(potentialCustomers)
   
   ## capturing 1% of potential customers on average
@@ -1595,7 +1595,7 @@ Close enough for me. Yay!
 *Rent by Location* is considered known and a table of rent expenses (`beachgoerProb`) by milemarker (`mileMarker`) is in the following built-in `causact` data frame:
 
 ```{r}
-beachExpDF = beachLocDF %>%
+beachExpDF = beachLocDF |>
   select(mileMarker,expenseEst)
 
 beachExpDF
@@ -1608,7 +1608,7 @@ expenseFun = function(locExpenseDF,bathhouseLocation) {
   ## get number of customers exiting at each mile marker
   ## by taking total # of beachgoers and using location
   ## probability to break the number down by mileMarker
-  beachExpDF = locExpenseDF %>%
+  beachExpDF = locExpenseDF |>
     filter(mileMarker == bathhouseLocation)
   
   return(beachExpDF$expenseEst)
@@ -1639,10 +1639,10 @@ With all the building blocks in place, we create a function that takes a potenti
 ```{r}
 generativeRecipe = function(bathhouseLocation) {
   numBeachgoers = getNumBeachgoers()
-  locProbDF = beachLocDF %>%
+  locProbDF = beachLocDF |>
     select(mileMarker,beachgoerProb)
   # bathhouseLocation is passed as input to function
-  locExpenseDF = beachLocDF %>% 
+  locExpenseDF = beachLocDF |> 
     select(mileMarker,expenseEst)
   rev = revenueFun(numBeachgoers,
                    locProbDF,
@@ -1697,7 +1697,7 @@ From visual inspection of the figure above, there are certain locations that see
 To demonstrate incorporating additional complexity into our simulation, let’s assume we only have \$100,000 to invest, that disqualifies many of the locations. The change to incorporate this is common; manipulate the dataframe to eliminate the infeasible choices and then view the results.
 
 ```{r}
-gf_point(profit ~ locDec, data = decDrawsDF %>% filter(exp < 100000))
+gf_point(profit ~ locDec, data = decDrawsDF |> filter(exp < 100000))
 ```
 
 Under the budget constraint, locating at mile markers 1.9 (expenses of \$96,000) or at mile marker 2.0 (expenses are \$76,000) now provide the best outcomes.
@@ -1710,21 +1710,21 @@ fasterGenRecipe = function(nSims) {
   fastGenDF = tibble(
     simNum = 1:nSims,
     numBeachgoers =
-      sample(totalBeachgoersRepSample,nSims)) %>%
-    crossing(beachLocDF) %>%
+      sample(totalBeachgoersRepSample,nSims)) |>
+    crossing(beachLocDF) |>
     mutate(numAtMileMarker = 
-             numBeachgoers * beachgoerProb) %>%
+             numBeachgoers * beachgoerProb) |>
     select(simNum,numAtMileMarker,
-           mileMarker,expenseEst,numAtMileMarker) %>%
-    group_by(simNum) %>% arrange(mileMarker) %>%
+           mileMarker,expenseEst,numAtMileMarker) |>
+    group_by(simNum) |> arrange(mileMarker) |>
     mutate(numPotentialCust = 
              lag(numAtMileMarker, default = 0) +
              numAtMileMarker + 
-             lead(numAtMileMarker, default = 0)) %>%
-    ungroup() %>% arrange(simNum,mileMarker) %>%
+             lead(numAtMileMarker, default = 0)) |>
+    ungroup() |> arrange(simNum,mileMarker) |>
     mutate(estRevenue = 
-             30 * numPotentialCust * 0.01) %>%
-    mutate(profit = estRevenue - expenseEst) %>%
+             30 * numPotentialCust * 0.01) |>
+    mutate(profit = estRevenue - expenseEst) |>
     select(simNum,mileMarker,profit,
            estRevenue,expenseEst)
   return(fastGenDF)
@@ -1736,12 +1736,12 @@ fasterGenRecipe = function(nSims) {
 plotCaption = 
   "Median Profit (dark point) and 90% Credible Interval"
 
-fasterGenRecipe(4000) %>% group_by(mileMarker) %>%
+fasterGenRecipe(4000) |> group_by(mileMarker) |>
         summarize(q05 = stats::quantile(profit,0.05),
                   q50 = stats::quantile(profit,0.50),
                   q95 = stats::quantile(profit,0.95),
-                  expense = first(expenseEst)) %>%
-        arrange(mileMarker) %>%
+                  expense = first(expenseEst)) |>
+        arrange(mileMarker) |>
         ggplot(aes(y = mileMarker, yend = mileMarker)) +
         geom_linerange(aes(xmin = q05, xmax = q95), 
                      size = 4, color = "#5f9ea0") +
@@ -1763,4 +1763,543 @@ I encourage you to avoid presenting point estimates whenever possible. They are 
 
 ## A simple linear model
 
-XXX
+> BuildIt Inc. flips houses - they buy houses to quickly renovate and then sell. Their specialty is building additions on to existing houses in established neighborhoods and then selling the home at prices above their total investment. BuildIt’s decision to move into a neighborhood is based on how sales price fluctuates with square footage. If sales price seems to increase by more than \$120 per additional square foot, then they consider that neighborhood to be a good candidate for buying houses. BuildIt is eyeing a new neighborhood and records the square footage and prices of some recent sales transactions.
+
+The following code creates a dataframe with BuildIt’s findings (note: `salesPrice` is in thousands of dollars):
+
+```{r}
+dataDF = tibble(
+  salesPrice = c(160, 220, 190, 250, 290, 240),
+  sqFootage = c(960, 1285, 1350, 1600, 1850, 1900))
+```
+
+Visually, we can confirm what appears to be a linear relationship between square footage and sales prices by creating a scatterplot with a linear regression line drawn in blue: The so-called best line fit to six points. It is the line that minimizes the squared deviations between the line’s predictions of price and the observed prices. We will seek to draw multiple plausible lines, not just one.
+
+```{r}
+gf_lm(salesPrice ~ sqFootage, data = dataDF) |> gf_point()
+```
+
+BuildIt is interested in the slope of this line which gives the estimated change in mean sales price for each unit change in square footage. For BuildIt, they want to know if this slope is above 120 per square foot?
+
+Letting,
+
+$$
+\begin{aligned}x_i \equiv &\textrm{ The square footage for the } i^{th} \textrm{ house.} \\y_i \equiv &\textrm{ The observed sales price, in 000's, for the } i^{th} \textrm{ house.} \\\alpha &\equiv \textrm{ The intercept term for the regression line.} \\\beta &\equiv \textrm{ The slope coefficient representing change in expected price per square footage.} \\\mu_i \equiv &\textrm{ The expected sales price, in 000's, for any given square footage where } \\& \hspace{0.2cm} \mu_i = E(y_i | x_i) \textrm{ and } \mu_i = \alpha + \beta \times x_i.\end{aligned}
+$$
+
+the regression output can be extracted using the `lm()` function in R. $\alpha$ is the `(intercept)` and `sqFootage` is the slope coefficient, $\beta$, for square footage:
+
+```{r}
+lm(salesPrice ~ sqFootage, data = dataDF)
+```
+
+Based on the output, the following linear equation is the so-called “best” line:
+
+$$
+\mu_i = 58.91 + 0.1114 \times x_i
+$$
+
+Using this model, BuildIt can anticipate being able to sell additional square footage for about \$111 per square foot (i.e. $1000 \times \beta$ because price is in 000’s). This would not earn them acceptable profit as it is less than \$120 per square foot. However, with only 6 data points, there is obviously going to be tremendous uncertainty in this estimate. A Bayesian model can capture this uncertainty.
+
+### A simple Bayesian linear model
+
+From previous coursework, you are probably familiar with simple linear regression in a non-Bayesian context. Extending this model to our Bayesian context, we will create an observational model with the assumption that our observed data is normally distributed around some line. Let’s use the following notation to describe the line:
+
+$$
+\mu_i = \alpha + \beta x_i
+$$
+
+where,
+
+$$
+\begin{aligned}x_i &\equiv \textrm{The value of an explanatory variable for the } i^{th} \textrm{ observation.} \\\alpha &\equiv \textrm{ The intercept term for the line.} \\\beta &\equiv \textrm{ The slope coefficient for the line.} \\\mu_i &\equiv \textrm{ The expected value (or mean) for the } i^{th} \textrm{ observation.}\end{aligned}
+$$
+
+In our generative DAG workflow, we represent the Bayesian version of simple linear regression:
+
+```{r}
+graph = dag_create() |>
+  dag_node("Sales Price","y",
+           rhs = normal(mu,sigma),
+           data = dataDF$salesPrice) |>
+  dag_node("Expected Sales Price","mu",
+           child = "y",
+           rhs = alpha + beta * x) |>
+  dag_node("Intercept","alpha",
+           child = "mu",
+           rhs = uniform(-100,175)) |>
+  dag_node("Square Footage","x",
+           data = dataDF$sqFootage,
+           child = "mu") |>
+  dag_node("Price Std. Dev.","sigma",
+           rhs = gamma(4,0.1),
+           child = "y") |>
+  dag_node("Price Per SqFt Slope", "beta",
+           rhs = normal(0.120,0.80),
+           child = "mu") |>
+  dag_plate("Observations","i",
+            nodeLabels = c("y","mu","x"))
+
+graph |> dag_render()
+```
+
+The statistical model of the generative DAG has reasonable priors that we will analyze later - for now, let’s digest the implied narrative. Starting at the bottom:
+
+-   *Sales Price* Node(`y`): We observe *Sales Price* data where each realization is normally distributed about an *Expected Sales Price*, $\mu$.
+
+-   *Expected Sales Price* Node(`mu`): Each realization $\mu$ is actually a deterministic function of this node’s parents. Graphically, the double perimeter around the node signals this. This node’s presence on the observation plate alerts us that this expectation varies with each observation. The only way this can happen is that it has a parent that varies with each observation; namely *Square Footage*.
+
+    -   *Square Footage* Node(`x`): The *Square Footage* is observed (as noted by the darker fill) and its lack of `rhs` means we are not modelling any of the variation in realizations ($x$); we just take it as a given.
+
+    -   All other yet-to-be discussed nodes are outside the *Observations* plate. Therefore, the model assumes these three other nodes each have one *true* value. The one we are most interested in *Price Per SqFt Slope*, $\beta$, as this will serve as an estimate of how home prices change when Build-It adds square footage. *Intercept* just sets some base-level home value and *Price Std. Dev.* gives a measure of how much home prices vary about the calculated expected price, $\mu$.
+
+A main deficiency of non-Bayesian linear regression lines is that they do not measure uncertainty in slope coefficients as well. Ultimately, we would rather make decisions that do not fall victim to the hubris of a single estimate and instead make informed decisions with measured uncertainty. For us, we seek to investigate all **plausible** parameter values for the square footage coefficient, not just one.
+
+To highlight the idea of having multiple plausible lines, consider capturing the relationship between sales price and square footage using one of these 8 alternative lines (shown using dashed lines):
+
+![](images/clipboard-2200813982.png)
+
+**Might these alternative lines also describe the relationship between square footage and the expected sales price of a house?** Actually, they do seem reasonable - by golly, there should be multiple plausible lines. So instead of just defining one plausible line, let’s use Bayesian inference to get a posterior distribution over all plausible lines consistent with our model.
+
+To get our posterior, the `numpyro` model is executed with additional arguments so that it runs longer to yield the posterior distribution (extra samples are needed to explore the posterior realm because both our measly 6 points of data and our weak prior leave a very large plausible space to explore):
+
+```{r}
+drawsDF = graph |> 
+  dag_numpyro(num_warmup = 2000, num_samples = 5000)
+```
+
+::: callout-note
+Our interest is in the slope of the plausible lines. Because different slope terms can dramatically affect where the line crosses the y-axis, the intercept term should be allowed to fluctuate. Instead of trying the difficult task of placing a prior on the intercept, we can just use a wide uniform prior where we know the line will be positively sloped and not too far from 0. A better way to do this is to transform x to represent the deviation from the average x. In this case, the intercept prior just represents our belief about the price of an average square footage house.
+:::
+
+When analyzing the posterior distribution, we are really just interested in the slope coefficient (i.e. 000’s per square foot), we just want a posterior distribution over $\beta$. Visually, that posterior distribution can be retrieved by:
+
+```{r}
+drawsDF |> 
+  select(beta) |> 
+  dagp_plot()
+```
+
+The plot shows estimates around 0.120 are plausible, but does not clearly put the majority of plausibility above 0.120. While the estimates are most likely positive (most of the posterior density is where ), the percent above 0.120 will have to be calculated via a query of the posterior distribution:
+
+```{r}
+drawsDF |>
+  mutate(above120 = ifelse(beta > 0.120,1,0)) |>
+  summarize(pctAbove120 = mean(above120))
+```
+
+Yielding an approximate 41.9% probability for the company to at least break-even.
+
+Interestingly, because of the uncertainty in the estimate, there is still meaningful probability that the company can earn much more than \$120 per square foot, For example, here is the probability of being above \$140 per square foot.
+
+```{r}
+critValue = 0.140
+drawsDF |>
+  mutate(aboveCriticalValue = 
+           ifelse(beta > critValue,1,0)) |>
+  summarize(pctAbove = mean(aboveCriticalValue))
+```
+
+yielding an approximate 21.9% probability for the company to earn over a very favorable \$140 per square foot.
+
+In conclusion, there is still alot of uncertainty in the estimate of $\beta$. Yet, the company needs to make a decision. If all relevant information has already been collected and BuildIt wants to be confident they will not lose money, then the best decision is to not invest in houses from this neighborhood. However, given the uncertainty in the estimate, this neighborhood certainly has the potential to be profitable. More data and/or more modelling assumptions will be the only ways to reduce that uncertainty and hence, be more confident in this opportunity. This makes sense - we only have six data points to go off of.
+
+### Adding robustness
+
+When modelling, assumptions should reflect the reality you are trying to model. Use care traversing the business analytics bridge from real-world to math-world. For example, when it comes to housing prices, there might be alot of outliers in your data. Hence, it might be better to say that housing prices are Student-$t$ distributed about some expected sales price rather than normally distributed - this will make estimates much more robust to outliers. In a Bayesian context, model assumption changes are readily accomodated, we do not need new or special techniques. In the generative DAG we change the observed data distribution from Normal to Student-$t$.
+
+```{r}
+graph = dag_create() |>
+  dag_node("Sales Price","y",
+           rhs = student(nu,mu,sigma),  ###NEW DIST.
+           data = dataDF$salesPrice) |>
+  dag_node("Deg. of Freedom","nu",    ###NEW NODE
+           child = "y",
+           rhs = gamma(2,0.1)) |>
+  dag_node("Expected Sales Price","mu",
+           child = "y",
+           rhs = alpha + beta * x) |> 
+  dag_node("Price Std. Dev.","sigma",
+           rhs = gamma(4,0.1),
+           child = "y") |>
+  dag_node("Square Footage","x",
+           data = dataDF$sqFootage,
+           child = "mu") |>
+  dag_node("Intercept","alpha",
+           child = "mu",
+           rhs = uniform(-100,175)) |>
+  dag_node("Price Per SqFt Slope", "beta",
+           rhs = normal(0.120,0.80),
+           child = "mu") |>
+  dag_plate("Observations","i",
+            nodeLabels = c("y","mu","x"))   
+
+graph |> dag_render()
+```
+
+### Explanatory variable centering
+
+There are always mathematical tricks to do something a little better. In this book, we mostly shy away from the tricks to focus on the core creation process of generative DAGs. However, as you advance on in your BAW journey, you’ll see models leveraging these tricks as if they are common knowledge.
+
+![](images/clipboard-2232385158.png)
+
+The trick we will use now is *centering an explanatory variable*. The plot above expands the regression line shown in the previous figure to show the y-intercept at the point `(0,58.9)` and two other lines that plausibly describe the data. Notice the wild swings in intercepts of these lines. We captured knowledge about these wild swings with the node below, but it does not feel natural.
+
+```{r}
+dag_create() |>
+  dag_node("Intercept","alpha",
+           rhs = uniform(-100,175)) |> dag_render()
+```
+
+After adding a centered column of square footage to `dataDF`:
+
+```{r}
+dataDF = dataDF |>
+  mutate(centeredSqFootage = 
+           sqFootage - mean(sqFootage))
+```
+
+We can create the figure below:
+
+![](images/clipboard-2118476944.png)
+
+By centering the *Square Footage* variable, we are effectively shifting the y-axis to be drawn in the middle of our *Square Footage* data, $x$. More importantly, this transforms our interpretation of the y-intercept. Any line predicting expected sales price now intersects the y-axis at the average square footage. Hence, our y-intercept is the expected sales price of an average house. It is much easier for us to elicit assumptions about the average price of an average house than it is to imagine the meaning of the y-intercept for a zero square foot house. For our problem, we will say the average house gets sold in the \$200K range, $\alpha \sim N(200,50)$. The updated generative DAG is shown below:
+
+```{r}
+graph = dag_create() |>
+  dag_node("Sales Price","y",
+           rhs = student(nu,mu,sigma),  
+           data = dataDF$salesPrice) |>
+  dag_node("Deg. of Freedom","nu",    
+           child = "y",
+           rhs = gamma(2,0.1)) |>
+  dag_node("Expected Sales Price","mu",
+           child = "y",
+           rhs = alpha + beta * x) |> 
+  dag_node("Price Std. Dev.","sigma",
+           rhs = gamma(4,0.1),
+           child = "y") |>
+  dag_node("Cent. Square Footage","x",  
+           data = dataDF$centeredSqFootage, ## CHANGE
+           child = "mu") |>
+  dag_node("Intercept","alpha",
+           child = "mu",
+           rhs = normal(200,50)) |>  ## CHANGE PRIOR
+  dag_node("Price Per SqFt Slope", "beta",
+           rhs = normal(0.120,0.80),
+           child = "mu") |>
+  dag_plate("Observations","i",
+            nodeLabels = c("y","mu","x"))   
+
+graph |> dag_render()
+```
+
+```{r}
+drawsDF = graph |> 
+  dag_numpyro(num_warmup = 2000, num_samples = 5000)
+
+drawsDF |> dagp_plot()
+```
+
+```{r}
+## get 20 draws from posterior
+plotDF = drawsDF |>
+  slice_sample(n=20)
+
+gf_lm(salesPrice ~ centeredSqFootage, data = dataDF) |> gf_point() |> 
+  gf_abline(intercept = ~ alpha, slope = ~ beta, data = plotDF, alpha = .25)
+```
+
+and realize that there are lots of lines that look plausible through our data. Build-it is going to need more data before they can be confident about the relationship between price and square footage.
+
+More generally, please start to think of Bayesian models as things you, as a Business Analyst, get to create. As long as you are mimicking reality with your models, you will find great success taking the building blocks you know and building models of increasing complexity that capture further nuances of the real-world. These models are yours to build - go boldly and make tailored models of the world you work in!
+
+### Getting more help
+
+Richard McElreath’s course uses `Stan` instead of `causact` and `numpyro`, yet outside of the computational engine, the material is relevant to your study. I highly recommend his lesson on linear models (see <https://youtu.be/0biewTNUBP4>). If you have the time, watch from the beginning. If you want to zero in on the simple linear model, he creates the first linear model trying to predict height as a function of weight at 43:00.
+
+## Linear predictors and inverse link functions
+
+We are learning building blocks for making models of data-generating processes. Each block is used to make some mathematical representation of the real-world. The better our representations, the better our insights. We have almost all the building blocks we need, latent nodes, observed nodes, calculated nodes, edges, plates, linear models, and probability distributions, but this section introduces one last powerful building block - the inverse link function.
+
+### Linear predictors
+
+We focus on restricting the *range* of linear predictors. The *range* of a function is the set of values that the function can give as output. For a linear predictor with non-zero slope, this range is any number from $-\infty$ to $\infty$.
+
+A linear predictor for data observation, $i$ , is any function expressible in this form:
+
+$$
+f(x_{i1},x_{i2},\ldots,x_{in}) = \alpha + \beta_1 * x_{i1} + \beta_2 * x_{i2} + \cdots + \beta_n * x_{in}
+$$
+
+where $x_{i1},x_{i2},\ldots,x_{in}$ is the $i^{th}$ observation of a set of $n$ explanatory variables, $\alpha$ is the base-level output when all the explanatory variables are zero (e.g. y-intercept when $n=1$), and $\beta_j$ the coefficient for the $j^{th}$ explanatory variable ($j \in {1,2,\ldots,n}$). When $n = 1$, this is just the equation of a line as in the last section. When there is more than one explanatory variable, we are making a function with *high-dimensional* input - meaning the input includes multiple explanatory RV realizations per observed row. High-dimensional functions are no longer easily plotted, but the interpretation of the coefficients remain consistent with our intuition.
+
+Explanatory variable effects are fully summarized in the corresponding coefficients, $\beta$. If an individual coefficient $\beta$ is positive, the linear prediction increases by $\beta$ units for each unit change in the explanatory variable. For example, we thought it plausible for the expected sales price of a home to go up by \$120 for every additional square foot; 10 additional square feet, then the home value increases \$1,200; 100 additional square feet, then the home value increases \$12,000. You can continue this logic ad-nauseum until you have infinitely big houses with infinite home prices. The takeaway is that linear predictors, in theory, can take on values anywhere from $-\infty$ to $\infty$.
+
+### Inverse link functions
+
+An inverse link function takes linear predictor output, which ranges from $-\infty$ to $\infty$, and confines it in some way to a different scale. For example, if we want to use many explanatory variables to explain success probability, our method will be to estimate a linear predictor and then, transform it so its value is forced to lie between zero and 1 (i.e. match the domain over which probabilities exist). More generally, inverse link functions are used to make linear predictors map to predicted values that are on a different scale. For our purposes, we will look at two specific inverse link functions:
+
+1.  *Exponential*: The exponential function converts a linear predictor of the form $\alpha + \beta_1 x_1 + \beta_2 x_2 + \ldots + \beta_n x_n$ into a curve that is restricted to values between 0 and $\infty$. This is useful for converting a linear predictor into a non-negative value. For example, the rate of tickets issued in New York city can be modeled by taking a linear predictor for tickets and turning it into a non-negative rate of ticket issuance. If we label the linear predictor value $y$ and the transformed value $\lambda$, the exponential function converting $y$ to $\lambda$ is defined here:
+
+$$
+\lambda = \exp(y) = \exp(\alpha + \beta_1 x_1 + \beta_2 x_2 + \ldots + \beta_n x_n)
+$$
+
+2.  *Inverse Logit* (aka logistic): This function provides a way to convert a linear predictor of the form $\alpha + \beta_1 x_1 + \beta_2 x_2 + \ldots + \beta_n x_n$ into a curve that is restricted to values between 0 and 1. This is useful for converting a linear predictor to a probability. If we label the linear predictor value $y$ and the transformed value $\theta$, the inverse logit function converting $y$ to $\theta$ is defined here (note the negative sign):
+
+$$
+\theta = \frac{1}{1+\exp(-y)}= \frac{1}{1+\exp(-(\alpha + \beta_1 x_1 + \beta_2 x_2 + \ldots + \beta_n x_n))}
+$$
+
+While the beauty of these functions is that it allows us to use the easily-understood linear model form and still also have a form that is useful in a generative DAG. The downside is we lose interpretability of the coefficients. The only thing we get to say easily is that higher values of the linear predictor correspond to higher values of the transformed output.
+
+::: callout-note
+When communicating the effects of explanatory variables that are put through inverse link functions, you should either: 1) simulate observed data using the prior or posterior’s generative recipe, or 2) consult one of the more rigorous texts on Bayesian data analysis for some mathematical tricks to interpreting generative recipes with these inverse link functions (see references at end of book).
+:::
+
+#### Exponential function
+
+The generative DAG below is a generic example of a Poisson count variable and makes the expected rate of occurrence a function of an explanatory variable:
+
+```{r}
+dag_create() |>
+  dag_node("Count Data","k",
+           rhs = poisson(rate),
+           obs = TRUE) |>
+  dag_node("Exp Rate","rate",
+           rhs = exp(y),
+           child = "k") |>
+  dag_node("Linear Predictor","y",
+           rhs = alpha + beta * x,
+           child = "rate") |>
+  dag_node("Intercept","alpha",
+           child = "y") |>
+  dag_node("Explantory Var Coeff","beta",
+           child = "y") |>
+  dag_node("Observed Expl Var","x",
+           child = "y",
+           obs = TRUE) |>
+  dag_plate("Observation","i",
+            nodeLabels = c("k","rate","y","x")) |>
+  dag_render()
+```
+
+The inverse link function transformation takes place in the node for `rate`. The linear predictor, $y$, can take on any value from $-\infty$ to $\infty$, but as soon as it is transformed with the exponential function, it can only be a positive number. This transformation is shown in the figure below where positive and negative x-axis values become solely positive y-axis values.
+
+![Graph of the exponential function. The linear predictor in our case is alpha + beta \* x. The role of the exp function is to map this linear predictor to a scale that is non-negative. This essentially takes any number from -infinity to infinity and provides a positive number as an output.](images/clipboard-3504728207.png)
+
+From this figure, we see that negative values of the linear predictor are transformed into values of rate between 0 and 1 and positive values of the linear predictor get transformed into rate values greater than 1. Notice this transformation is non-linear, and hence caution must be used interpreting the slope coefficients of the linear predictor.
+
+#### Inverse logit
+
+The generative DAG below is a generic example which leverages the inverse logit link function:
+
+```{r}
+dag_create() |>
+  dag_node("Bernoulli Data","z",
+           rhs = bernoulli(theta),
+           obs = TRUE) |>
+  dag_node("Success Probability","theta",
+           rhs = 1 / (1+exp(-y)),
+           child = "z") |>
+  dag_node("Linear Predictor","y",
+           rhs = alpha + beta * x,
+           child = "theta") |>
+  dag_node("Intercept","alpha",
+           child = "y") |>
+  dag_node("Explantory Var Coeff","beta",
+           child = "y") |>
+  dag_node("Observed Expl Var","x",
+           child = "y",
+           obs = TRUE) |>
+  dag_plate("Observation","i",
+            nodeLabels = c("z","theta","y","x")) |>
+  dag_render()
+```
+
+Note the inverse link function transformation takes place in the node for `theta`. To start to get a feel for what this transformation does, observe the figure below. When the linear predictor is zero, the associated probability is 50%. Increasing the linear predictor will increase the associated probability, but with diminishing effect. When the linear predictor is increased by one unit from say 1 to 2, the corresponding probability goes from about 73% to 88% (i.e. from to ). This is a 15% jump. However, increasing the linear predictor by one additional unit has probability go from 88% to 95% - only a 7% jump. Further increasing the linear predictor has diminishing effect. Likewise, large negative values in the linear predictor lead to ever-closer to zero values for probability.
+
+![Graph of the inverse logit function (aka the logistic function). The linear predictor in our case is alpha + beta \* x. The role of the inverse logit function is to map this linear predictor to a scale bounded by zero and one. This essentailly takes any number from -infinity to infinty and provides a probability value as an output.](images/clipboard-3967822332.png)
+
+Almost anytime you are modelling a probability as a function of many explanatory variables, using the inverse logit-link function is an obvious choice to make the mathematics work.
+
+The use of the inverse logit function is done inside a method called logistic regression. Check out this sequence of videos that begin here (<https://youtu.be/zAULhNrnuL4>) on logistic regression for some additional insight.
+
+You have officially been exposed to all the building blocks you need for executing Bayesian inference of ever-increasing complexity. These include latent nodes, observed nodes, calculated nodes, edges, plates, probability distributions, linear predictors, and inverse-link functions. While you have not seen every probability distribution or every inverse-link function, you have now seen enough that you should be able to digest new instances of these things. In the next chapter, we seek to build confidence by increasing the complexity of the business narrative and the resulting generative DAG to yield insights. Insights you might not even have thought possible!
+
+## Multi-level modeling
+
+> Crossfit Gyms is growing - they started the year with 5 locations and have more than doubled in size in the last five months. Additionally, Crossfit Gyms has secured funding to open 100 more gyms over the next year. Their key recruitment mechanism is to offer free trial memberships that last a calendar month, but management is unsure how to measure the success of this trial. Additionally, some gyms have been randomly chosen to increase the stretching, called “Yoga Stretch”, done during these trial classes. Crossfit Gyms is unsure whether this has helped convert trial customers into memberships. The theory is that new members, typically less athletic than current clients, benefit from the additional stretching and are more likely to enjoy the additional stretch time.
+
+Our task is to help Crossfit Gyms understand the effect of its trial membership program and whether additional stretching leads to better conversion of free-trial customers into paying members. As we go through this example, we will explore three different ways to model the problem:
+
+1.  **Complete Pooling**: This modelling method will *pool* or aggregate all the data for all the gyms. It will model two conversions rate for the entire franchise - one with yoga stretching and one without.
+
+2.  **No Pooling**: This method will treat each gym individually with the underlying assumption that the two conversion rates (with and without yoga) at one gym are completely independent of conversion rates at every other gym.
+
+3.  **Partial Pooling**: Under partial pooling, we assume each gym’s two conversion rates have both a unique component (like the no pooling case) as well as a component that is dictated by company-wide policies (like the complete pooling case). Hint: This is the case we will always use as the other two cases are subsets of these types of models.
+
+### The gym data
+
+Crossfit Gyms does not have alot of data, so let’s look at it a little bit.
+
+```{r}
+data("gymDF")
+
+gymDF
+```
+
+When thinking about visualizing this dataset, we need to understand that each row represents a particular gym (`gymID`) running one month of free trial classes.
+
+```{r}
+gymDF %>% group_by(gymID) %>%
+  summarize(numberOfObservations = n())
+```
+
+to discover that we have twelve unique gyms; the first 5 gyms give us five months of data each, while the next seven have less data (ranging from one to four free-trial months).
+
+Since the small `gymdDF` data frame consists of only five variables, I am confident that I can map all five to aesthetics and show all the data using one plot command. After several iterations of plots (excluded here), here is one way to do that:
+
+```{r}
+plotDF = gymDF %>%
+  mutate(stretchType = 
+           ifelse(yogaStretch == 1, 
+                  "Yoga Stretch", 
+                  "Traditional"))
+
+ggplot(plotDF, 
+       aes(x = timePeriod, #map time to x-axis
+           y = nTrialCustomers, #map numTrials to y-axis
+           fill = stretchType #map fill to stretch type
+                  )) + 
+  geom_col(width = 0.75, 
+           alpha = 0.55) +  # use transparency
+  geom_col(width = 0.75, 
+           aes(y = nSigned)) + # different y-mapping
+  facet_wrap(vars(gymID), labeller = label_both) + 
+  theme_minimal(11) + 
+  theme(plot.caption = 
+          element_text(size = 9, face = "italic"),
+        legend.position = "bottom") +
+  ylab("# of Trial Customers") +
+  labs(caption = 
+         "Darker fill for # of sign-ups.")
+```
+
+You can see from the figure above that the recruitment rate at each gym, represented by the proportion of dark fill to lighter fill, seems pretty consistent. However, there is apparent high variability across gyms. For example, `gymID: 2` seems to be a consistently poor performer while `gymID: 5` is somehow able to consistently make more conversions from free trials to paying memberships.
+
+::: callout-note
+Talking to the managers of these gyms to understand the differences in performance should be high on your to-do list, but for now (and because we do not have access to these managers), we will stick with the data that is available.
+:::
+
+In terms of providing insight as to recruitment rates and the effect of extra yoga stretching (indicated by fill color), the visualization can only go so far. Yes, we can say `gymID: 5` outperforms `gymID: 2`, but with only five months of data, how can we quantify our uncertainty about the differences? Additionally, yoga stretching seems to lead to better conversion rates, but how confident should we be given the seemingly small amounts of data?
+
+### Complete pooling
+
+```{r}
+graph = dag_create() %>%
+  dag_node("Number of Signups","k",
+           rhs = binomial(nTrials,theta),
+           data = gymDF$nSigned) %>%
+  dag_node("Signup Probability","theta",
+           child = "k",
+           rhs = beta(2,2)) %>%
+  dag_node("Number of Trials","nTrials",
+           child = "k",
+           data = gymDF$nTrialCustomers) %>%
+  dag_plate("Yoga Stretch Flag","x",
+           data = gymDF$yogaStretch,
+           nodeLabels = "theta",
+           addDataNode = TRUE) %>%
+  dag_plate("Observation","i",
+            nodeLabels = c("k","x","nTrials"))
+
+graph %>% dag_render()
+```
+
+### No pooling
+
+```{r}
+graph2 = dag_create() %>%
+  dag_node("Number of Signups","k",
+           rhs = binomial(nTrials,theta),
+           data = gymDF$nSigned) %>%
+  dag_node("Signup Probability","theta",
+           child = "k",
+           rhs = 1 / (1+exp(-y))) %>%
+  dag_node("Number of Trials","nTrials",
+           child = "k",
+           data = gymDF$nTrialCustomers) %>%
+  dag_node("Linear Predictor","y",
+           rhs = alpha + beta * x,
+           child = "theta") %>%
+  dag_node("Yoga Stretch Flag","x",
+           data = gymDF$yogaStretch,
+           child = "y") %>%
+  dag_node("Intercept","alpha",
+           rhs = normal(-1,1.5),
+           child = "y") %>%
+  dag_node("Yoga Slope Coeff","beta",
+           rhs = normal(0,0.75),
+           child = "y") %>%
+  dag_plate("Gym","j",
+            nodeLabels = c("alpha","beta"),
+            data = gymDF$gymID,
+            addDataNode = TRUE) %>%
+  dag_plate("Observation","i",
+            nodeLabels = c("k","x","j",
+                           "nTrials","theta","y"))
+
+graph2 %>% dag_render()
+```
+
+### Partial pooling
+
+```{r}
+graph3 = dag_create() %>%
+  dag_node("Number of Signups","k",
+           rhs = binomial(nTrials,theta),
+           data = gymDF$nSigned) %>%
+  dag_node("Signup Probability","theta",
+           child = "k",
+           rhs = 1 / (1+exp(-y))) %>%
+  dag_node("Number of Trials","nTrials",
+           child = "k",
+           data = gymDF$nTrialCustomers) %>%
+  dag_node("Linear Predictor","y",
+           rhs = alpha + beta * x,
+           child = "theta") %>%
+  dag_node("Yoga Stretch Flag","x",
+           data = gymDF$yogaStretch,
+           child = "y") %>%
+  dag_node("Gym Intercept","alpha",
+           rhs = normal(mu_alpha,sd_alpha),
+           child = "y") %>%
+  dag_node("Gym Yoga Slope Coeff","beta",
+           rhs = normal(mu_beta,sd_beta),
+           child = "y") %>%
+  dag_node("Avg Crossfit Intercept","mu_alpha",
+           rhs = normal(-1,1.5),
+           child = "alpha") %>%
+  dag_node("Avg Crossfit Yoga Slope","mu_beta",
+           rhs = normal(0,0.75),
+           child = "beta") %>%
+  dag_node("SD Crossfit Intercept","sd_alpha",
+           rhs = uniform(0,3),
+           child = "alpha") %>%
+  dag_node("SD Crossfit Yoga Slope","sd_beta",
+           rhs = uniform(0,1.5),
+           child = "beta") %>%
+  dag_plate("Gym","j",
+            nodeLabels = c("alpha","beta"),
+            data = gymDF$gymID,
+            addDataNode = TRUE) %>%
+  dag_plate("Observation","i",
+            nodeLabels = c("k","x","j",
+                           "nTrials","theta","y"))
+
+graph3 %>% dag_render()
+```
+
+\
