@@ -1345,7 +1345,7 @@ drawsDF |> dagp_plot()
 
 Prior uncertainty gave equal plausibility to any number between 3,000 and 7,000. The plausible range for the posterior spans a drastically smaller range, about 5,005 - 5,030. So while this might lead us to think we have a good model, do not be hypnotized into believing it just yet.
 
-### Posterior predictive check
+### Posterior predictive check(s)
 
 A *posterior predictive check* compares simulated data using a draw of your posterior distribution to the observed data you are modelling - usually represented by the data node at the bottom of your generative DAG. This means we simulate 105 observations of tickets issued, $K$, and compare the simulated data to the 105 real-world observations (two years worth of Wednesday tickets).
 
@@ -2142,7 +2142,7 @@ Our task is to help Crossfit Gyms understand the effect of its trial membership 
 
 ### The gym data
 
-Crossfit Gyms does not have alot of data, so let’s look at it a little bit.
+Crossfit Gyms does not have alot of data, so let’s look at it.
 
 ```{r}
 data("gymDF")
@@ -2157,7 +2157,7 @@ gymDF %>% group_by(gymID) %>%
   summarize(numberOfObservations = n())
 ```
 
-to discover that we have twelve unique gyms; the first 5 gyms give us five months of data each, while the next seven have less data (ranging from one to four free-trial months).
+We discover that we have twelve unique gyms; the first 5 gyms give us five months of data each, while the next seven have less data (ranging from one to four free-trial months).
 
 Since the small `gymdDF` data frame consists of only five variables, I am confident that I can map all five to aesthetics and show all the data using one plot command. After several iterations of plots (excluded here), here is one way to do that:
 
@@ -2197,6 +2197,21 @@ In terms of providing insight as to recruitment rates and the effect of extra yo
 
 ### Complete pooling
 
+The complete pooling model considers all observations to come from identical probability distributions; it does not differentiate based on `gymID` or `timePeriod`. Hence, all 44 observations behave as if they come from a single gym’s generative model. For this generative model, the unobserved parameter `theta` will be the only distinguishing feature. It takes one value for a traditional stretching class and another value for a yoga stretching class.
+
+Under the complete pooling assumption, there is enough data that empirical estimates provide good probability estimates for the conversion rates by class type:
+
+```{r}
+gymDF %>% group_by(yogaStretch) %>%
+  summarize(nTrials = sum(nTrialCustomers),
+            nSuccess = sum(nSigned)) %>%
+  mutate(pctSuccess = nSuccess / nTrials)
+```
+
+Here, we see that conversion rates seem to rise with the additional stretching from a base rate of 23.9% to 34.8%.
+
+The figure below shows the generative DAG for complete pooling. Despite not being a very good model for reasons we will see, it still provides a posterior with seemingly small uncertainty:
+
 ```{r}
 graph = dag_create() %>%
   dag_node("Number of Signups","k",
@@ -2218,7 +2233,72 @@ graph = dag_create() %>%
 graph %>% dag_render()
 ```
 
+Notice that the graphical model has four random variables. Three of them are observed and enclosed in a plate labelled `Observation i`. This plate means that for each observation in our data (i.e. one of the 44 unique gym/time period rows in `gymDF`) , there are three observed random variables: 1) Number of signups (`k`), 2) Number of Trial Customers (`nTrials`), and 3) a flag indicating whether yoga stretch ws used or not (`x`). In contrast, the plate around Signup Probability, labelled *Yoga Stretch Flag*, indicates we have two random variables for Signup Probability: 1) a Signup Probability for traditional Stretching (i.e. probability when `x=0`) and 2) a Signup Probability for yoga Stretching (i.e. probability when `x=1`). In other words, all gyms have the same two success probabilities associated with them; we call this *complete pooling* of the gyms as according to the model, each gym is identical. We know this is a ridiculous assumption from visualizing the data, but we use this to illustrate that there are very meaningful assumptions tied to each graphical model we make.
+
+Computationally, we go through the standard process to get our posterior and then we look at our posterior draws. Estimated signup probability for yoga stretching (about 35%) seems to range higher than without yoga (less than 25%).
+
+```{r}
+drawsDF = graph %>% dag_numpyro()
+```
+
+```{r}
+drawsDF %>% dagp_plot()
+```
+
+Perhaps, the fact that these probability estimates align with the emprical estimates (above) should seem comforting, but there is something sinister lurking in our model choice. Recall that our visual sensibilities have already noticed differences among the gyms. So, it should be expected that we are not accurately modeling the data generation process when ignoring these differences. By performing a posterior predictive check, we see how looking at this overly simple *complete pooling* model fails to capture some of the patterns observed in the actual data.
+
+```{r}
+params = drawsDF |> slice_sample(n=20)
+
+params
+```
+
+```{r}
+simData <- function(theta_0, theta_1, data) {
+  simData <- data %>%
+    mutate(signupProb = ifelse(yogaStretch == 0, theta_0, theta_1)) %>%
+    mutate(nSigned = rbinom(
+      n = n(),
+      size = nTrialCustomers,
+      prob = signupProb
+    )) |>
+    pull(nSigned)
+}
+```
+
+```{r}
+d <- params |>
+  mutate(simID = row_number()) |>
+  rowwise() |> 
+  mutate(simData = list(simData(theta_0, theta_1, gymDF))) |> 
+  ungroup()
+
+d
+```
+
+```{r}
+d |>
+  select(simID, simData) |> 
+  unnest_longer(simData) |> # flatten list-column to numeric values
+  gf_dens(~ simData, color = ~ factor(simID)) |> 
+  gf_dens(~ nSigned, data = gymDF, linewidth = 2, inherit = FALSE)
+```
+
+The figure above shows the observed data density plot across gyms as represented by the dark blue line. This observed distribution is not captured by the spaghetti lines, i.e. predicted distributions from the posterior, none of the 20 sample predicted distributions come close to mimicking the behavior seen in the actual data. This is a clear signal we are not modelling something right; namely each gym will have some differences in recruiting probabilities, and hence, produce more varied amounts of success than suggested by the complete pooling model.
+
 ### No pooling
+
+The no pooling model treats each gym as distinct completely independent entities, i.e. the Crossfit Gym franchise has no overarching effect on success probabilities. Thus, learning about one gym’s success in recruiting tells us nothing about the population of gyms or any other specific gym.
+
+::: callout-note
+The no pooling model is shown for the contrast it provides in relation to other models we will look at; it is an ill-advised model when you have small data and transferable learning. We will assume learning about one gym’s success rate should impact our opinion about another gym’s success rate - we do not want each gym to be distinct.
+:::
+
+On our path to modelling the effects of yoga, we are going to refine our previous generative DAG to get closer to the business narrative. Specifically, we want to ensure a direct modelling of the effect of yoga stretching.
+
+We are going to assume there is a base-level of recruitment at each gym and that yoga stretching provides some deviation from the base. If we were to model the deviation as a probability deviation, say yoga increases recruitment probability 20%, than its possible that forecasting the effect of yoga at a gym with a base recruitment rate of 85% leads to 105% sign-up probability - this is a problem as probability of signup cannot be over 100%.
+
+To remedy this, we use a linear predictor as input into an inverse logit link function; it ensures signup probability draws are actually probability values between 0 and 1. This new generative story with base recuitment probability and deviation for yoga is reflected in the following generative DAG:
 
 ```{r}
 graph2 = dag_create() %>%
@@ -2253,6 +2333,87 @@ graph2 = dag_create() %>%
 
 graph2 %>% dag_render()
 ```
+
+This generative DAG has slope and intercept terms that are not directly understandable - they go through an inverse logit function before we see their impact on a node that we can understand. To understand the prior on these terms (or any prior), we simulate how its values are transferred to a parameter of interest, in this case that parameter is signup probability.
+
+#### Using prior predictive checks to help choose priors
+
+Unfortunately, I am always writing custom code to explore the effect of priors on the children of transformed linear predictors. This part of the BAW process will be accelerated in future versions of `causact`. Until then, here is some code to help find a good `alpha`:
+
+```{r}
+numSims = 10000
+
+## guess at distribution and params for alpha
+## let's say alpha ~ normal(0,10) was my first guess
+## then simulate effects on theta.  Do they mimic
+## your uncertainty in theat without data?  If no,
+## iterate with a different guess. After 
+## many iterations I settled on normal(-1,1.5)
+## below code gets repsample of theta for this prior
+simDF = tibble(alpha = rnorm(n = numSims, 
+                             mean = -1., 
+                             sd = 1.5))
+
+simDF = simDF %>%
+  mutate(y = alpha) %>% ##follows DAG
+  mutate(theta = 1 / (1 + exp(-y)))  ## inv logit
+
+## plot implied theta distribution
+gf_density(~ theta, data = simDF)
+```
+
+The figure above is the result of many iterations of looking at the effect of changes in `alpha`’s prior on success probability `theta`. I stopped at because it reflected my mild belief that sign-up probability will be smaller than 50%, but should also remain open to any possible value. I am also comfortable with the hump of probability around 10%, that sounds like a good mode for recruiting.
+
+Your prior should be open to changing its mind, but it should also reflect assumptions you are willing to make. Don’t be afraid to have mildly informative priors, they do not all need to be uniform. This will protect you from bad decisions when there is not alot of data to inform the posterior.
+
+A similar exercise is done for the prior on . Recognizing that stretching is most likely going to have a small effect. I run the following code to find my prior:
+
+```{r}
+numSims = 10000
+
+## guess at distribution and params for beta
+## since beta is deviation from base rate alpha
+## assume a base rate and then, see effects
+## mean should absolutely be zero to indicate no prior
+## preference for whether yoga is helpful
+## let the data tip the scales
+## sd should be smaller than that used for alpha
+baseRate = 0.20  ## assumed for now
+
+## logit function 
+## input: probability, 
+## output: linear Predictor
+## inverse of the inverse logit function
+## linearPredictor = log(probability / (1-probability))
+alpha = log(baseRate / (1 - baseRate))
+
+simDF = tibble(alpha = alpha,
+               beta = rnorm(n = numSims,
+                            mean = 0,  
+                            sd = 0.75))
+
+simDF = simDF %>%
+  mutate(yNoYoga = alpha) %>%
+  mutate(yWithYoga = alpha + beta) %>%
+  mutate(thetaNoYoga = 1 / (1 + exp(-yNoYoga))) %>%
+  mutate(thetaWithYoga = 1 / (1 + exp(-yWithYoga))) %>%
+  mutate(probDiff = thetaWithYoga - thetaNoYoga)
+
+## plot implied theta distribution
+gf_density(~ probDiff, data = simDF)
+```
+
+#### Parameter estimation
+
+```{r}
+drawsDF = graph2 %>% dag_numpyro()
+```
+
+```{r}
+drawsDF %>% dagp_plot()
+```
+
+xxx
 
 ### Partial pooling
 

@@ -166,7 +166,7 @@ window.Quarto = {
   </ul></li>
   <li><a href="#posterior-predictive-checks" id="toc-posterior-predictive-checks" class="nav-link" data-scroll-target="#posterior-predictive-checks">Posterior predictive checks</a>
   <ul class="collapse">
-  <li><a href="#posterior-predictive-check" id="toc-posterior-predictive-check" class="nav-link" data-scroll-target="#posterior-predictive-check">Posterior predictive check</a></li>
+  <li><a href="#posterior-predictive-checks-1" id="toc-posterior-predictive-checks-1" class="nav-link" data-scroll-target="#posterior-predictive-checks-1">Posterior predictive check(s)</a></li>
   </ul></li>
   <li><a href="#decision-making" id="toc-decision-making" class="nav-link" data-scroll-target="#decision-making">Decision making</a>
   <ul class="collapse">
@@ -2294,8 +2294,8 @@ Note
 </div>
 </div>
 <p>Prior uncertainty gave equal plausibility to any number between 3,000 and 7,000. The plausible range for the posterior spans a drastically smaller range, about 5,005 - 5,030. So while this might lead us to think we have a good model, do not be hypnotized into believing it just yet.</p>
-<section id="posterior-predictive-check" class="level3">
-<h3 class="anchored" data-anchor-id="posterior-predictive-check">Posterior predictive check</h3>
+<section id="posterior-predictive-checks-1" class="level3">
+<h3 class="anchored" data-anchor-id="posterior-predictive-checks-1">Posterior predictive check(s)</h3>
 <p>A <em>posterior predictive check</em> compares simulated data using a draw of your posterior distribution to the observed data you are modelling - usually represented by the data node at the bottom of your generative DAG. This means we simulate 105 observations of tickets issued, <span class="math inline">\(K\)</span>, and compare the simulated data to the 105 real-world observations (two years worth of Wednesday tickets).</p>
 <p>Here we use just one draw from the posterior for demonstrating a posterior predictive check. It is actually more appropriate to use dozens of draws to get a feel for the variability within the entire sample of feasible posterior distributions.</p>
 <p>Simulating 105 observations requires us to convert the DAGs joint distribution recipe into computer code - we do this going from top to bottom of the graph. At the top of the DAG is <code>lambda</code>, so we get a single random draw from the posterior:</p>
@@ -3725,7 +3725,7 @@ Note
 </ol>
 <section id="the-gym-data" class="level3">
 <h3 class="anchored" data-anchor-id="the-gym-data">The gym data</h3>
-<p>Crossfit Gyms does not have alot of data, so let’s look at it a little bit.</p>
+<p>Crossfit Gyms does not have alot of data, so let’s look at it.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb133"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb133-1"><a href="#cb133-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(<span class="st">"gymDF"</span>)</span>
 <span id="cb133-2"><a href="#cb133-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -4123,7 +4123,7 @@ Note
 </div>
 </div>
 </div>
-<p>to discover that we have twelve unique gyms; the first 5 gyms give us five months of data each, while the next seven have less data (ranging from one to four free-trial months).</p>
+<p>We discover that we have twelve unique gyms; the first 5 gyms give us five months of data each, while the next seven have less data (ranging from one to four free-trial months).</p>
 <p>Since the small <code>gymdDF</code> data frame consists of only five variables, I am confident that I can map all five to aesthetics and show all the data using one plot command. After several iterations of plots (excluded here), here is one way to do that:</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb135"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb135-1"><a href="#cb135-1" aria-hidden="true" tabindex="-1"></a>plotDF <span class="ot">=</span> gymDF <span class="sc">%&gt;%</span></span>
@@ -4175,117 +4175,559 @@ Note
 </section>
 <section id="complete-pooling" class="level3">
 <h3 class="anchored" data-anchor-id="complete-pooling">Complete pooling</h3>
+<p>The complete pooling model considers all observations to come from identical probability distributions; it does not differentiate based on <code>gymID</code> or <code>timePeriod</code>. Hence, all 44 observations behave as if they come from a single gym’s generative model. For this generative model, the unobserved parameter <code>theta</code> will be the only distinguishing feature. It takes one value for a traditional stretching class and another value for a yoga stretching class.</p>
+<p>Under the complete pooling assumption, there is enough data that empirical estimates provide good probability estimates for the conversion rates by class type:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb136"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb136-1"><a href="#cb136-1" aria-hidden="true" tabindex="-1"></a>graph <span class="ot">=</span> <span class="fu">dag_create</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb136-2"><a href="#cb136-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Number of Signups"</span>,<span class="st">"k"</span>,</span>
-<span id="cb136-3"><a href="#cb136-3" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">binomial</span>(nTrials,theta),</span>
-<span id="cb136-4"><a href="#cb136-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>nSigned) <span class="sc">%&gt;%</span></span>
-<span id="cb136-5"><a href="#cb136-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Signup Probability"</span>,<span class="st">"theta"</span>,</span>
-<span id="cb136-6"><a href="#cb136-6" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"k"</span>,</span>
-<span id="cb136-7"><a href="#cb136-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">beta</span>(<span class="dv">2</span>,<span class="dv">2</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb136-8"><a href="#cb136-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Number of Trials"</span>,<span class="st">"nTrials"</span>,</span>
-<span id="cb136-9"><a href="#cb136-9" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"k"</span>,</span>
-<span id="cb136-10"><a href="#cb136-10" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>nTrialCustomers) <span class="sc">%&gt;%</span></span>
-<span id="cb136-11"><a href="#cb136-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_plate</span>(<span class="st">"Yoga Stretch Flag"</span>,<span class="st">"x"</span>,</span>
-<span id="cb136-12"><a href="#cb136-12" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>yogaStretch,</span>
-<span id="cb136-13"><a href="#cb136-13" aria-hidden="true" tabindex="-1"></a>           <span class="at">nodeLabels =</span> <span class="st">"theta"</span>,</span>
-<span id="cb136-14"><a href="#cb136-14" aria-hidden="true" tabindex="-1"></a>           <span class="at">addDataNode =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb136-15"><a href="#cb136-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_plate</span>(<span class="st">"Observation"</span>,<span class="st">"i"</span>,</span>
-<span id="cb136-16"><a href="#cb136-16" aria-hidden="true" tabindex="-1"></a>            <span class="at">nodeLabels =</span> <span class="fu">c</span>(<span class="st">"k"</span>,<span class="st">"x"</span>,<span class="st">"nTrials"</span>))</span>
-<span id="cb136-17"><a href="#cb136-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb136-18"><a href="#cb136-18" aria-hidden="true" tabindex="-1"></a>graph <span class="sc">%&gt;%</span> <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb136"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb136-1"><a href="#cb136-1" aria-hidden="true" tabindex="-1"></a>gymDF <span class="sc">%&gt;%</span> <span class="fu">group_by</span>(yogaStretch) <span class="sc">%&gt;%</span></span>
+<span id="cb136-2"><a href="#cb136-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">nTrials =</span> <span class="fu">sum</span>(nTrialCustomers),</span>
+<span id="cb136-3"><a href="#cb136-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">nSuccess =</span> <span class="fu">sum</span>(nSigned)) <span class="sc">%&gt;%</span></span>
+<span id="cb136-4"><a href="#cb136-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">pctSuccess =</span> nSuccess <span class="sc">/</span> nTrials)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
-<div class="grViz html-widget html-fill-item" id="htmlwidget-5a80d96970b9501c191a" style="width:100%;height:464px;"></div>
-<script type="application/json" data-for="htmlwidget-5a80d96970b9501c191a">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\nsubgraph cluster1{\nlabel=\"Observation i [44]\"\n  \"1\" [label = \"Number of Signups\nk ~ binomial(nTrials,theta[x])\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"3\" [label = \"Number of Trials\nnTrials\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"4\" [label = \"Yoga Stretch Flag\nx\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] }\n\nsubgraph cluster2{\nlabel=\"Yoga Stretch Flag x [2]\"\n  \"2\" [label = \"Signup Probability\ntheta ~ beta(2,2)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] }\n\n\"2\"->\"1\" [style = \"dashed\"] \n\"3\"->\"1\" [style = \"solid\"] \n\"4\"->\"1\" [style = \"solid\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div class="kable-table">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;">yogaStretch</th>
+<th style="text-align: right;">nTrials</th>
+<th style="text-align: right;">nSuccess</th>
+<th style="text-align: right;">pctSuccess</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1675</td>
+<td style="text-align: right;">400</td>
+<td style="text-align: right;">0.2388</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">630</td>
+<td style="text-align: right;">219</td>
+<td style="text-align: right;">0.3476</td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
-</section>
-<section id="no-pooling" class="level3">
-<h3 class="anchored" data-anchor-id="no-pooling">No pooling</h3>
+</div>
+<p>Here, we see that conversion rates seem to rise with the additional stretching from a base rate of 23.9% to 34.8%.</p>
+<p>The figure below shows the generative DAG for complete pooling. Despite not being a very good model for reasons we will see, it still provides a posterior with seemingly small uncertainty:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb137"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb137-1"><a href="#cb137-1" aria-hidden="true" tabindex="-1"></a>graph2 <span class="ot">=</span> <span class="fu">dag_create</span>() <span class="sc">%&gt;%</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb137"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb137-1"><a href="#cb137-1" aria-hidden="true" tabindex="-1"></a>graph <span class="ot">=</span> <span class="fu">dag_create</span>() <span class="sc">%&gt;%</span></span>
 <span id="cb137-2"><a href="#cb137-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Number of Signups"</span>,<span class="st">"k"</span>,</span>
 <span id="cb137-3"><a href="#cb137-3" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">binomial</span>(nTrials,theta),</span>
 <span id="cb137-4"><a href="#cb137-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>nSigned) <span class="sc">%&gt;%</span></span>
 <span id="cb137-5"><a href="#cb137-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Signup Probability"</span>,<span class="st">"theta"</span>,</span>
 <span id="cb137-6"><a href="#cb137-6" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"k"</span>,</span>
-<span id="cb137-7"><a href="#cb137-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span><span class="sc">+</span><span class="fu">exp</span>(<span class="sc">-</span>y))) <span class="sc">%&gt;%</span></span>
+<span id="cb137-7"><a href="#cb137-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">beta</span>(<span class="dv">2</span>,<span class="dv">2</span>)) <span class="sc">%&gt;%</span></span>
 <span id="cb137-8"><a href="#cb137-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Number of Trials"</span>,<span class="st">"nTrials"</span>,</span>
 <span id="cb137-9"><a href="#cb137-9" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"k"</span>,</span>
 <span id="cb137-10"><a href="#cb137-10" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>nTrialCustomers) <span class="sc">%&gt;%</span></span>
-<span id="cb137-11"><a href="#cb137-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Linear Predictor"</span>,<span class="st">"y"</span>,</span>
-<span id="cb137-12"><a href="#cb137-12" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> alpha <span class="sc">+</span> beta <span class="sc">*</span> x,</span>
-<span id="cb137-13"><a href="#cb137-13" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"theta"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb137-14"><a href="#cb137-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Yoga Stretch Flag"</span>,<span class="st">"x"</span>,</span>
-<span id="cb137-15"><a href="#cb137-15" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>yogaStretch,</span>
-<span id="cb137-16"><a href="#cb137-16" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"y"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb137-17"><a href="#cb137-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Intercept"</span>,<span class="st">"alpha"</span>,</span>
-<span id="cb137-18"><a href="#cb137-18" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">normal</span>(<span class="sc">-</span><span class="dv">1</span>,<span class="fl">1.5</span>),</span>
-<span id="cb137-19"><a href="#cb137-19" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"y"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb137-20"><a href="#cb137-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Yoga Slope Coeff"</span>,<span class="st">"beta"</span>,</span>
-<span id="cb137-21"><a href="#cb137-21" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">normal</span>(<span class="dv">0</span>,<span class="fl">0.75</span>),</span>
-<span id="cb137-22"><a href="#cb137-22" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"y"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb137-23"><a href="#cb137-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_plate</span>(<span class="st">"Gym"</span>,<span class="st">"j"</span>,</span>
-<span id="cb137-24"><a href="#cb137-24" aria-hidden="true" tabindex="-1"></a>            <span class="at">nodeLabels =</span> <span class="fu">c</span>(<span class="st">"alpha"</span>,<span class="st">"beta"</span>),</span>
-<span id="cb137-25"><a href="#cb137-25" aria-hidden="true" tabindex="-1"></a>            <span class="at">data =</span> gymDF<span class="sc">$</span>gymID,</span>
-<span id="cb137-26"><a href="#cb137-26" aria-hidden="true" tabindex="-1"></a>            <span class="at">addDataNode =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb137-27"><a href="#cb137-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_plate</span>(<span class="st">"Observation"</span>,<span class="st">"i"</span>,</span>
-<span id="cb137-28"><a href="#cb137-28" aria-hidden="true" tabindex="-1"></a>            <span class="at">nodeLabels =</span> <span class="fu">c</span>(<span class="st">"k"</span>,<span class="st">"x"</span>,<span class="st">"j"</span>,</span>
-<span id="cb137-29"><a href="#cb137-29" aria-hidden="true" tabindex="-1"></a>                           <span class="st">"nTrials"</span>,<span class="st">"theta"</span>,<span class="st">"y"</span>))</span>
-<span id="cb137-30"><a href="#cb137-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb137-31"><a href="#cb137-31" aria-hidden="true" tabindex="-1"></a>graph2 <span class="sc">%&gt;%</span> <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb137-11"><a href="#cb137-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_plate</span>(<span class="st">"Yoga Stretch Flag"</span>,<span class="st">"x"</span>,</span>
+<span id="cb137-12"><a href="#cb137-12" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>yogaStretch,</span>
+<span id="cb137-13"><a href="#cb137-13" aria-hidden="true" tabindex="-1"></a>           <span class="at">nodeLabels =</span> <span class="st">"theta"</span>,</span>
+<span id="cb137-14"><a href="#cb137-14" aria-hidden="true" tabindex="-1"></a>           <span class="at">addDataNode =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb137-15"><a href="#cb137-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_plate</span>(<span class="st">"Observation"</span>,<span class="st">"i"</span>,</span>
+<span id="cb137-16"><a href="#cb137-16" aria-hidden="true" tabindex="-1"></a>            <span class="at">nodeLabels =</span> <span class="fu">c</span>(<span class="st">"k"</span>,<span class="st">"x"</span>,<span class="st">"nTrials"</span>))</span>
+<span id="cb137-17"><a href="#cb137-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb137-18"><a href="#cb137-18" aria-hidden="true" tabindex="-1"></a>graph <span class="sc">%&gt;%</span> <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="grViz html-widget html-fill-item" id="htmlwidget-5a80d96970b9501c191a" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-5a80d96970b9501c191a">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\nsubgraph cluster1{\nlabel=\"Observation i [44]\"\n  \"1\" [label = \"Number of Signups\nk ~ binomial(nTrials,theta[x])\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"3\" [label = \"Number of Trials\nnTrials\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"4\" [label = \"Yoga Stretch Flag\nx\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] }\n\nsubgraph cluster2{\nlabel=\"Yoga Stretch Flag x [2]\"\n  \"2\" [label = \"Signup Probability\ntheta ~ beta(2,2)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] }\n\n\"2\"->\"1\" [style = \"dashed\"] \n\"3\"->\"1\" [style = \"solid\"] \n\"4\"->\"1\" [style = \"solid\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<p>Notice that the graphical model has four random variables. Three of them are observed and enclosed in a plate labelled <code>Observation i</code>. This plate means that for each observation in our data (i.e.&nbsp;one of the 44 unique gym/time period rows in <code>gymDF</code>) , there are three observed random variables: 1) Number of signups (<code>k</code>), 2) Number of Trial Customers (<code>nTrials</code>), and 3) a flag indicating whether yoga stretch ws used or not (<code>x</code>). In contrast, the plate around Signup Probability, labelled <em>Yoga Stretch Flag</em>, indicates we have two random variables for Signup Probability: 1) a Signup Probability for traditional Stretching (i.e.&nbsp;probability when <code>x=0</code>) and 2) a Signup Probability for yoga Stretching (i.e.&nbsp;probability when <code>x=1</code>). In other words, all gyms have the same two success probabilities associated with them; we call this <em>complete pooling</em> of the gyms as according to the model, each gym is identical. We know this is a ridiculous assumption from visualizing the data, but we use this to illustrate that there are very meaningful assumptions tied to each graphical model we make.</p>
+<p>Computationally, we go through the standard process to get our posterior and then we look at our posterior draws. Estimated signup probability for yoga stretching (about 35%) seems to range higher than without yoga (less than 25%).</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb138"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb138-1"><a href="#cb138-1" aria-hidden="true" tabindex="-1"></a>drawsDF <span class="ot">=</span> graph <span class="sc">%&gt;%</span> <span class="fu">dag_numpyro</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb139"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb139-1"><a href="#cb139-1" aria-hidden="true" tabindex="-1"></a>drawsDF <span class="sc">%&gt;%</span> <span class="fu">dagp_plot</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-121-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Perhaps, the fact that these probability estimates align with the emprical estimates (above) should seem comforting, but there is something sinister lurking in our model choice. Recall that our visual sensibilities have already noticed differences among the gyms. So, it should be expected that we are not accurately modeling the data generation process when ignoring these differences. By performing a posterior predictive check, we see how looking at this overly simple <em>complete pooling</em> model fails to capture some of the patterns observed in the actual data.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb140"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb140-1"><a href="#cb140-1" aria-hidden="true" tabindex="-1"></a>params <span class="ot">=</span> drawsDF <span class="sc">|&gt;</span> <span class="fu">slice_sample</span>(<span class="at">n=</span><span class="dv">20</span>)</span>
+<span id="cb140-2"><a href="#cb140-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb140-3"><a href="#cb140-3" aria-hidden="true" tabindex="-1"></a>params</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="kable-table">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;">theta_0</th>
+<th style="text-align: right;">theta_1</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0.2485</td>
+<td style="text-align: right;">0.3573</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2350</td>
+<td style="text-align: right;">0.3523</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2510</td>
+<td style="text-align: right;">0.3333</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2597</td>
+<td style="text-align: right;">0.3503</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2369</td>
+<td style="text-align: right;">0.3445</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2526</td>
+<td style="text-align: right;">0.3727</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2266</td>
+<td style="text-align: right;">0.3610</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2476</td>
+<td style="text-align: right;">0.3567</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2322</td>
+<td style="text-align: right;">0.3456</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2381</td>
+<td style="text-align: right;">0.3508</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2470</td>
+<td style="text-align: right;">0.3484</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2275</td>
+<td style="text-align: right;">0.3769</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2381</td>
+<td style="text-align: right;">0.3843</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2435</td>
+<td style="text-align: right;">0.3584</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2390</td>
+<td style="text-align: right;">0.3605</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2406</td>
+<td style="text-align: right;">0.3551</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2417</td>
+<td style="text-align: right;">0.3343</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2207</td>
+<td style="text-align: right;">0.3522</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2360</td>
+<td style="text-align: right;">0.3685</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2371</td>
+<td style="text-align: right;">0.3161</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb141"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb141-1"><a href="#cb141-1" aria-hidden="true" tabindex="-1"></a>simData <span class="ot">&lt;-</span> <span class="cf">function</span>(theta_0, theta_1, data) {</span>
+<span id="cb141-2"><a href="#cb141-2" aria-hidden="true" tabindex="-1"></a>  simData <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
+<span id="cb141-3"><a href="#cb141-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">signupProb =</span> <span class="fu">ifelse</span>(yogaStretch <span class="sc">==</span> <span class="dv">0</span>, theta_0, theta_1)) <span class="sc">%&gt;%</span></span>
+<span id="cb141-4"><a href="#cb141-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">nSigned =</span> <span class="fu">rbinom</span>(</span>
+<span id="cb141-5"><a href="#cb141-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb141-6"><a href="#cb141-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">size =</span> nTrialCustomers,</span>
+<span id="cb141-7"><a href="#cb141-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">prob =</span> signupProb</span>
+<span id="cb141-8"><a href="#cb141-8" aria-hidden="true" tabindex="-1"></a>    )) <span class="sc">|&gt;</span></span>
+<span id="cb141-9"><a href="#cb141-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pull</span>(nSigned)</span>
+<span id="cb141-10"><a href="#cb141-10" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb142"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb142-1"><a href="#cb142-1" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> params <span class="sc">|&gt;</span></span>
+<span id="cb142-2"><a href="#cb142-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">simID =</span> <span class="fu">row_number</span>()) <span class="sc">|&gt;</span></span>
+<span id="cb142-3"><a href="#cb142-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rowwise</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb142-4"><a href="#cb142-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">simData =</span> <span class="fu">list</span>(<span class="fu">simData</span>(theta_0, theta_1, gymDF))) <span class="sc">|&gt;</span> </span>
+<span id="cb142-5"><a href="#cb142-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>()</span>
+<span id="cb142-6"><a href="#cb142-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb142-7"><a href="#cb142-7" aria-hidden="true" tabindex="-1"></a>d</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="kable-table">
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 4%">
+<col style="width: 4%">
+<col style="width: 3%">
+<col style="width: 88%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: right;">theta_0</th>
+<th style="text-align: right;">theta_1</th>
+<th style="text-align: right;">simID</th>
+<th style="text-align: left;">simData</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0.2485</td>
+<td style="text-align: right;">0.3573</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">6, 14, 9, 20, 14, 10, 14, 12, 19, 17, 1, 10, 15, 13, 13, 3, 29, 19, 6, 14, 18, 17, 6, 16, 19, 16, 25, 4, 19, 15, 13, 25, 9, 23, 15, 22, 26, 8, 11, 13, 11, 18, 22, 12</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2350</td>
+<td style="text-align: right;">0.3523</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: left;">7, 11, 6, 17, 19, 12, 16, 9, 20, 19, 3, 10, 22, 11, 16, 14, 26, 16, 5, 16, 20, 18, 10, 12, 14, 13, 13, 7, 15, 20, 12, 13, 13, 14, 18, 23, 23, 7, 10, 9, 6, 10, 14, 8</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2510</td>
+<td style="text-align: right;">0.3333</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: left;">11, 18, 8, 18, 19, 13, 15, 13, 11, 23, 4, 14, 22, 10, 21, 10, 24, 25, 5, 16, 18, 13, 9, 10, 16, 15, 26, 4, 18, 23, 9, 13, 11, 19, 14, 17, 27, 3, 11, 19, 10, 15, 20, 10</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2597</td>
+<td style="text-align: right;">0.3503</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: left;">6, 16, 8, 16, 23, 13, 20, 14, 15, 14, 5, 11, 21, 13, 13, 5, 28, 27, 4, 11, 18, 23, 10, 16, 14, 18, 21, 4, 19, 22, 11, 19, 9, 25, 21, 19, 28, 4, 10, 15, 10, 13, 18, 6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2369</td>
+<td style="text-align: right;">0.3445</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: left;">5, 12, 7, 18, 23, 7, 15, 12, 11, 12, 4, 11, 16, 12, 15, 11, 25, 12, 4, 16, 27, 20, 9, 19, 16, 16, 23, 3, 19, 11, 13, 20, 11, 14, 18, 31, 30, 5, 12, 19, 10, 12, 19, 8</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2526</td>
+<td style="text-align: right;">0.3727</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: left;">12, 12, 11, 15, 24, 4, 24, 8, 19, 19, 5, 13, 21, 14, 17, 6, 35, 15, 4, 14, 22, 17, 12, 13, 12, 27, 23, 9, 18, 14, 15, 15, 10, 15, 13, 27, 22, 7, 13, 12, 10, 12, 25, 11</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2266</td>
+<td style="text-align: right;">0.3610</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: left;">3, 14, 8, 9, 16, 8, 17, 11, 19, 17, 7, 16, 30, 14, 18, 10, 31, 12, 7, 9, 27, 26, 4, 8, 21, 24, 22, 3, 15, 21, 10, 21, 12, 20, 9, 24, 30, 1, 10, 18, 11, 13, 19, 11</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2476</td>
+<td style="text-align: right;">0.3567</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: left;">10, 16, 6, 12, 26, 10, 14, 6, 20, 16, 5, 11, 20, 14, 14, 8, 22, 27, 6, 13, 22, 22, 14, 16, 14, 15, 18, 6, 13, 12, 10, 21, 11, 13, 12, 24, 26, 3, 8, 21, 12, 15, 19, 9</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2322</td>
+<td style="text-align: right;">0.3456</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: left;">10, 12, 8, 12, 21, 4, 17, 6, 15, 12, 4, 7, 19, 9, 17, 9, 23, 19, 9, 11, 18, 24, 12, 14, 17, 16, 23, 4, 13, 18, 14, 24, 10, 14, 16, 20, 27, 8, 8, 12, 8, 11, 19, 6</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2381</td>
+<td style="text-align: right;">0.3508</td>
+<td style="text-align: right;">10</td>
+<td style="text-align: left;">9, 16, 10, 15, 15, 13, 15, 14, 10, 13, 3, 14, 17, 9, 14, 6, 34, 17, 3, 14, 15, 19, 13, 16, 13, 19, 18, 3, 11, 21, 12, 11, 13, 14, 13, 22, 23, 6, 17, 19, 9, 12, 13, 10</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2470</td>
+<td style="text-align: right;">0.3484</td>
+<td style="text-align: right;">11</td>
+<td style="text-align: left;">6, 16, 10, 15, 14, 10, 17, 9, 21, 16, 3, 10, 21, 11, 18, 8, 24, 14, 8, 13, 21, 18, 13, 11, 17, 18, 21, 5, 14, 13, 17, 13, 6, 9, 12, 31, 25, 8, 13, 20, 9, 15, 14, 13</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2275</td>
+<td style="text-align: right;">0.3769</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: left;">6, 17, 10, 12, 20, 11, 19, 11, 12, 17, 1, 10, 19, 12, 15, 12, 29, 13, 3, 12, 22, 27, 14, 12, 18, 14, 16, 7, 21, 12, 8, 14, 12, 15, 22, 30, 19, 4, 11, 17, 10, 9, 15, 6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2381</td>
+<td style="text-align: right;">0.3843</td>
+<td style="text-align: right;">13</td>
+<td style="text-align: left;">5, 9, 9, 11, 16, 10, 12, 9, 14, 20, 4, 12, 12, 12, 15, 13, 16, 18, 7, 12, 25, 23, 14, 16, 15, 17, 19, 3, 12, 16, 14, 13, 12, 18, 16, 32, 24, 4, 13, 20, 9, 12, 16, 8</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2435</td>
+<td style="text-align: right;">0.3584</td>
+<td style="text-align: right;">14</td>
+<td style="text-align: left;">6, 14, 9, 13, 18, 5, 19, 7, 14, 16, 7, 10, 19, 8, 15, 6, 26, 16, 7, 13, 20, 16, 11, 12, 13, 15, 20, 5, 13, 18, 8, 17, 10, 21, 11, 29, 28, 3, 11, 16, 10, 18, 16, 16</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2390</td>
+<td style="text-align: right;">0.3605</td>
+<td style="text-align: right;">15</td>
+<td style="text-align: left;">9, 13, 10, 11, 25, 4, 15, 6, 16, 18, 6, 12, 14, 9, 13, 5, 33, 24, 8, 12, 19, 22, 15, 12, 19, 15, 17, 3, 14, 23, 14, 17, 9, 27, 19, 30, 30, 2, 9, 11, 13, 17, 23, 10</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2406</td>
+<td style="text-align: right;">0.3551</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: left;">3, 17, 8, 17, 21, 12, 12, 10, 22, 16, 4, 11, 17, 11, 13, 10, 20, 19, 2, 14, 23, 18, 7, 17, 19, 21, 17, 3, 19, 15, 15, 24, 8, 19, 13, 23, 24, 2, 12, 18, 15, 7, 17, 10</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2417</td>
+<td style="text-align: right;">0.3343</td>
+<td style="text-align: right;">17</td>
+<td style="text-align: left;">6, 14, 3, 10, 26, 11, 19, 21, 11, 12, 5, 13, 17, 10, 16, 10, 24, 17, 6, 17, 23, 16, 12, 15, 11, 14, 16, 3, 14, 18, 12, 13, 7, 13, 11, 23, 17, 8, 7, 19, 6, 8, 16, 11</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2207</td>
+<td style="text-align: right;">0.3522</td>
+<td style="text-align: right;">18</td>
+<td style="text-align: left;">5, 12, 8, 8, 23, 9, 17, 9, 11, 11, 6, 15, 13, 10, 10, 2, 23, 19, 6, 14, 14, 19, 12, 17, 19, 16, 19, 6, 14, 18, 10, 17, 15, 16, 19, 19, 19, 4, 4, 11, 13, 9, 17, 7</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.2360</td>
+<td style="text-align: right;">0.3685</td>
+<td style="text-align: right;">19</td>
+<td style="text-align: left;">4, 10, 10, 13, 21, 4, 23, 8, 19, 14, 2, 10, 19, 10, 12, 12, 28, 18, 7, 8, 16, 25, 14, 11, 20, 16, 23, 6, 15, 17, 13, 17, 14, 16, 19, 30, 28, 6, 8, 24, 9, 13, 14, 5</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.2371</td>
+<td style="text-align: right;">0.3161</td>
+<td style="text-align: right;">20</td>
+<td style="text-align: left;">11, 18, 10, 8, 21, 5, 22, 13, 14, 22, 7, 12, 16, 8, 12, 7, 23, 14, 2, 11, 16, 20, 8, 12, 14, 12, 25, 4, 13, 17, 15, 10, 10, 24, 17, 18, 18, 2, 15, 17, 8, 13, 18, 7</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb143"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb143-1"><a href="#cb143-1" aria-hidden="true" tabindex="-1"></a>d <span class="sc">|&gt;</span></span>
+<span id="cb143-2"><a href="#cb143-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(simID, simData) <span class="sc">|&gt;</span> </span>
+<span id="cb143-3"><a href="#cb143-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unnest_longer</span>(simData) <span class="sc">|&gt;</span> <span class="co"># flatten list-column to numeric values</span></span>
+<span id="cb143-4"><a href="#cb143-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gf_dens</span>(<span class="sc">~</span> simData, <span class="at">color =</span> <span class="sc">~</span> <span class="fu">factor</span>(simID)) <span class="sc">|&gt;</span> </span>
+<span id="cb143-5"><a href="#cb143-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gf_dens</span>(<span class="sc">~</span> nSigned, <span class="at">data =</span> gymDF, <span class="at">linewidth =</span> <span class="dv">2</span>, <span class="at">inherit =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-125-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The figure above shows the observed data density plot across gyms as represented by the dark blue line. This observed distribution is not captured by the spaghetti lines, i.e.&nbsp;predicted distributions from the posterior, none of the 20 sample predicted distributions come close to mimicking the behavior seen in the actual data. This is a clear signal we are not modelling something right; namely each gym will have some differences in recruiting probabilities, and hence, produce more varied amounts of success than suggested by the complete pooling model.</p>
+</section>
+<section id="no-pooling" class="level3">
+<h3 class="anchored" data-anchor-id="no-pooling">No pooling</h3>
+<p>The no pooling model treats each gym as distinct completely independent entities, i.e.&nbsp;the Crossfit Gym franchise has no overarching effect on success probabilities. Thus, learning about one gym’s success in recruiting tells us nothing about the population of gyms or any other specific gym.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The no pooling model is shown for the contrast it provides in relation to other models we will look at; it is an ill-advised model when you have small data and transferable learning. We will assume learning about one gym’s success rate should impact our opinion about another gym’s success rate - we do not want each gym to be distinct.</p>
+</div>
+</div>
+<p>On our path to modelling the effects of yoga, we are going to refine our previous generative DAG to get closer to the business narrative. Specifically, we want to ensure a direct modelling of the effect of yoga stretching.</p>
+<p>We are going to assume there is a base-level of recruitment at each gym and that yoga stretching provides some deviation from the base. If we were to model the deviation as a probability deviation, say yoga increases recruitment probability 20%, than its possible that forecasting the effect of yoga at a gym with a base recruitment rate of 85% leads to 105% sign-up probability - this is a problem as probability of signup cannot be over 100%.</p>
+<p>To remedy this, we use a linear predictor as input into an inverse logit link function; it ensures signup probability draws are actually probability values between 0 and 1. This new generative story with base recuitment probability and deviation for yoga is reflected in the following generative DAG:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb144"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb144-1"><a href="#cb144-1" aria-hidden="true" tabindex="-1"></a>graph2 <span class="ot">=</span> <span class="fu">dag_create</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb144-2"><a href="#cb144-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Number of Signups"</span>,<span class="st">"k"</span>,</span>
+<span id="cb144-3"><a href="#cb144-3" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">binomial</span>(nTrials,theta),</span>
+<span id="cb144-4"><a href="#cb144-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>nSigned) <span class="sc">%&gt;%</span></span>
+<span id="cb144-5"><a href="#cb144-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Signup Probability"</span>,<span class="st">"theta"</span>,</span>
+<span id="cb144-6"><a href="#cb144-6" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"k"</span>,</span>
+<span id="cb144-7"><a href="#cb144-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span><span class="sc">+</span><span class="fu">exp</span>(<span class="sc">-</span>y))) <span class="sc">%&gt;%</span></span>
+<span id="cb144-8"><a href="#cb144-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Number of Trials"</span>,<span class="st">"nTrials"</span>,</span>
+<span id="cb144-9"><a href="#cb144-9" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"k"</span>,</span>
+<span id="cb144-10"><a href="#cb144-10" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>nTrialCustomers) <span class="sc">%&gt;%</span></span>
+<span id="cb144-11"><a href="#cb144-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Linear Predictor"</span>,<span class="st">"y"</span>,</span>
+<span id="cb144-12"><a href="#cb144-12" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> alpha <span class="sc">+</span> beta <span class="sc">*</span> x,</span>
+<span id="cb144-13"><a href="#cb144-13" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"theta"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb144-14"><a href="#cb144-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Yoga Stretch Flag"</span>,<span class="st">"x"</span>,</span>
+<span id="cb144-15"><a href="#cb144-15" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>yogaStretch,</span>
+<span id="cb144-16"><a href="#cb144-16" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"y"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb144-17"><a href="#cb144-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Intercept"</span>,<span class="st">"alpha"</span>,</span>
+<span id="cb144-18"><a href="#cb144-18" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">normal</span>(<span class="sc">-</span><span class="dv">1</span>,<span class="fl">1.5</span>),</span>
+<span id="cb144-19"><a href="#cb144-19" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"y"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb144-20"><a href="#cb144-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Yoga Slope Coeff"</span>,<span class="st">"beta"</span>,</span>
+<span id="cb144-21"><a href="#cb144-21" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">normal</span>(<span class="dv">0</span>,<span class="fl">0.75</span>),</span>
+<span id="cb144-22"><a href="#cb144-22" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"y"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb144-23"><a href="#cb144-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_plate</span>(<span class="st">"Gym"</span>,<span class="st">"j"</span>,</span>
+<span id="cb144-24"><a href="#cb144-24" aria-hidden="true" tabindex="-1"></a>            <span class="at">nodeLabels =</span> <span class="fu">c</span>(<span class="st">"alpha"</span>,<span class="st">"beta"</span>),</span>
+<span id="cb144-25"><a href="#cb144-25" aria-hidden="true" tabindex="-1"></a>            <span class="at">data =</span> gymDF<span class="sc">$</span>gymID,</span>
+<span id="cb144-26"><a href="#cb144-26" aria-hidden="true" tabindex="-1"></a>            <span class="at">addDataNode =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb144-27"><a href="#cb144-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_plate</span>(<span class="st">"Observation"</span>,<span class="st">"i"</span>,</span>
+<span id="cb144-28"><a href="#cb144-28" aria-hidden="true" tabindex="-1"></a>            <span class="at">nodeLabels =</span> <span class="fu">c</span>(<span class="st">"k"</span>,<span class="st">"x"</span>,<span class="st">"j"</span>,</span>
+<span id="cb144-29"><a href="#cb144-29" aria-hidden="true" tabindex="-1"></a>                           <span class="st">"nTrials"</span>,<span class="st">"theta"</span>,<span class="st">"y"</span>))</span>
+<span id="cb144-30"><a href="#cb144-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb144-31"><a href="#cb144-31" aria-hidden="true" tabindex="-1"></a>graph2 <span class="sc">%&gt;%</span> <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="grViz html-widget html-fill-item" id="htmlwidget-d406bbf49928d385f1dd" style="width:100%;height:464px;"></div>
 <script type="application/json" data-for="htmlwidget-d406bbf49928d385f1dd">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\nsubgraph cluster1{\nlabel=\"Gym j [12]\"\n  \"6\" [label = \"Intercept\nalpha ~ normal(-1,1.5)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"7\" [label = \"Yoga Slope Coeff\nbeta ~ normal(0,0.75)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] }\n\nsubgraph cluster2{\nlabel=\"Observation i [44]\"\n  \"1\" [label = \"Number of Signups\nk ~ binomial(nTrials,theta)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"2\" [label = \"Signup Probability\ntheta = 1 / (1 + exp(-y))\", shape = \"ellipse\", peripheries = \"2\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"3\" [label = \"Number of Trials\nnTrials\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"4\" [label = \"Linear Predictor\ny = alpha[j] + beta[j] * x\", shape = \"ellipse\", peripheries = \"2\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"5\" [label = \"Yoga Stretch Flag\nx\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"8\" [label = \"Gym\nj\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] }\n\n\"6\"->\"4\" [style = \"dashed\"] \n\"7\"->\"4\" [style = \"dashed\"] \n\"2\"->\"1\" [style = \"solid\"] \n\"3\"->\"1\" [style = \"solid\"] \n\"4\"->\"2\" [style = \"solid\"] \n\"5\"->\"4\" [style = \"solid\"] \n\"8\"->\"4\" [style = \"solid\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
+<p>This generative DAG has slope and intercept terms that are not directly understandable - they go through an inverse logit function before we see their impact on a node that we can understand. To understand the prior on these terms (or any prior), we simulate how its values are transferred to a parameter of interest, in this case that parameter is signup probability.</p>
+<section id="using-prior-predictive-checks-to-help-choose-priors" class="level4">
+<h4 class="anchored" data-anchor-id="using-prior-predictive-checks-to-help-choose-priors">Using prior predictive checks to help choose priors</h4>
+<p>Unfortunately, I am always writing custom code to explore the effect of priors on the children of transformed linear predictors. This part of the BAW process will be accelerated in future versions of <code>causact</code>. Until then, here is some code to help find a good <code>alpha</code>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb145"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb145-1"><a href="#cb145-1" aria-hidden="true" tabindex="-1"></a>numSims <span class="ot">=</span> <span class="dv">10000</span></span>
+<span id="cb145-2"><a href="#cb145-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb145-3"><a href="#cb145-3" aria-hidden="true" tabindex="-1"></a><span class="do">## guess at distribution and params for alpha</span></span>
+<span id="cb145-4"><a href="#cb145-4" aria-hidden="true" tabindex="-1"></a><span class="do">## let's say alpha ~ normal(0,10) was my first guess</span></span>
+<span id="cb145-5"><a href="#cb145-5" aria-hidden="true" tabindex="-1"></a><span class="do">## then simulate effects on theta.  Do they mimic</span></span>
+<span id="cb145-6"><a href="#cb145-6" aria-hidden="true" tabindex="-1"></a><span class="do">## your uncertainty in theat without data?  If no,</span></span>
+<span id="cb145-7"><a href="#cb145-7" aria-hidden="true" tabindex="-1"></a><span class="do">## iterate with a different guess. After </span></span>
+<span id="cb145-8"><a href="#cb145-8" aria-hidden="true" tabindex="-1"></a><span class="do">## many iterations I settled on normal(-1,1.5)</span></span>
+<span id="cb145-9"><a href="#cb145-9" aria-hidden="true" tabindex="-1"></a><span class="do">## below code gets repsample of theta for this prior</span></span>
+<span id="cb145-10"><a href="#cb145-10" aria-hidden="true" tabindex="-1"></a>simDF <span class="ot">=</span> <span class="fu">tibble</span>(<span class="at">alpha =</span> <span class="fu">rnorm</span>(<span class="at">n =</span> numSims, </span>
+<span id="cb145-11"><a href="#cb145-11" aria-hidden="true" tabindex="-1"></a>                             <span class="at">mean =</span> <span class="sc">-</span><span class="fl">1.</span>, </span>
+<span id="cb145-12"><a href="#cb145-12" aria-hidden="true" tabindex="-1"></a>                             <span class="at">sd =</span> <span class="fl">1.5</span>))</span>
+<span id="cb145-13"><a href="#cb145-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb145-14"><a href="#cb145-14" aria-hidden="true" tabindex="-1"></a>simDF <span class="ot">=</span> simDF <span class="sc">%&gt;%</span></span>
+<span id="cb145-15"><a href="#cb145-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">y =</span> alpha) <span class="sc">%&gt;%</span> <span class="do">##follows DAG</span></span>
+<span id="cb145-16"><a href="#cb145-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">theta =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(<span class="sc">-</span>y)))  <span class="do">## inv logit</span></span>
+<span id="cb145-17"><a href="#cb145-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb145-18"><a href="#cb145-18" aria-hidden="true" tabindex="-1"></a><span class="do">## plot implied theta distribution</span></span>
+<span id="cb145-19"><a href="#cb145-19" aria-hidden="true" tabindex="-1"></a><span class="fu">gf_density</span>(<span class="sc">~</span> theta, <span class="at">data =</span> simDF)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-127-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The figure above is the result of many iterations of looking at the effect of changes in <code>alpha</code>’s prior on success probability <code>theta</code>. I stopped at because it reflected my mild belief that sign-up probability will be smaller than 50%, but should also remain open to any possible value. I am also comfortable with the hump of probability around 10%, that sounds like a good mode for recruiting.</p>
+<p>Your prior should be open to changing its mind, but it should also reflect assumptions you are willing to make. Don’t be afraid to have mildly informative priors, they do not all need to be uniform. This will protect you from bad decisions when there is not alot of data to inform the posterior.</p>
+<p>A similar exercise is done for the prior on . Recognizing that stretching is most likely going to have a small effect. I run the following code to find my prior:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb146"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb146-1"><a href="#cb146-1" aria-hidden="true" tabindex="-1"></a>numSims <span class="ot">=</span> <span class="dv">10000</span></span>
+<span id="cb146-2"><a href="#cb146-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb146-3"><a href="#cb146-3" aria-hidden="true" tabindex="-1"></a><span class="do">## guess at distribution and params for beta</span></span>
+<span id="cb146-4"><a href="#cb146-4" aria-hidden="true" tabindex="-1"></a><span class="do">## since beta is deviation from base rate alpha</span></span>
+<span id="cb146-5"><a href="#cb146-5" aria-hidden="true" tabindex="-1"></a><span class="do">## assume a base rate and then, see effects</span></span>
+<span id="cb146-6"><a href="#cb146-6" aria-hidden="true" tabindex="-1"></a><span class="do">## mean should absolutely be zero to indicate no prior</span></span>
+<span id="cb146-7"><a href="#cb146-7" aria-hidden="true" tabindex="-1"></a><span class="do">## preference for whether yoga is helpful</span></span>
+<span id="cb146-8"><a href="#cb146-8" aria-hidden="true" tabindex="-1"></a><span class="do">## let the data tip the scales</span></span>
+<span id="cb146-9"><a href="#cb146-9" aria-hidden="true" tabindex="-1"></a><span class="do">## sd should be smaller than that used for alpha</span></span>
+<span id="cb146-10"><a href="#cb146-10" aria-hidden="true" tabindex="-1"></a>baseRate <span class="ot">=</span> <span class="fl">0.20</span>  <span class="do">## assumed for now</span></span>
+<span id="cb146-11"><a href="#cb146-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb146-12"><a href="#cb146-12" aria-hidden="true" tabindex="-1"></a><span class="do">## logit function </span></span>
+<span id="cb146-13"><a href="#cb146-13" aria-hidden="true" tabindex="-1"></a><span class="do">## input: probability, </span></span>
+<span id="cb146-14"><a href="#cb146-14" aria-hidden="true" tabindex="-1"></a><span class="do">## output: linear Predictor</span></span>
+<span id="cb146-15"><a href="#cb146-15" aria-hidden="true" tabindex="-1"></a><span class="do">## inverse of the inverse logit function</span></span>
+<span id="cb146-16"><a href="#cb146-16" aria-hidden="true" tabindex="-1"></a><span class="do">## linearPredictor = log(probability / (1-probability))</span></span>
+<span id="cb146-17"><a href="#cb146-17" aria-hidden="true" tabindex="-1"></a>alpha <span class="ot">=</span> <span class="fu">log</span>(baseRate <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">-</span> baseRate))</span>
+<span id="cb146-18"><a href="#cb146-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb146-19"><a href="#cb146-19" aria-hidden="true" tabindex="-1"></a>simDF <span class="ot">=</span> <span class="fu">tibble</span>(<span class="at">alpha =</span> alpha,</span>
+<span id="cb146-20"><a href="#cb146-20" aria-hidden="true" tabindex="-1"></a>               <span class="at">beta =</span> <span class="fu">rnorm</span>(<span class="at">n =</span> numSims,</span>
+<span id="cb146-21"><a href="#cb146-21" aria-hidden="true" tabindex="-1"></a>                            <span class="at">mean =</span> <span class="dv">0</span>,  </span>
+<span id="cb146-22"><a href="#cb146-22" aria-hidden="true" tabindex="-1"></a>                            <span class="at">sd =</span> <span class="fl">0.75</span>))</span>
+<span id="cb146-23"><a href="#cb146-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb146-24"><a href="#cb146-24" aria-hidden="true" tabindex="-1"></a>simDF <span class="ot">=</span> simDF <span class="sc">%&gt;%</span></span>
+<span id="cb146-25"><a href="#cb146-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">yNoYoga =</span> alpha) <span class="sc">%&gt;%</span></span>
+<span id="cb146-26"><a href="#cb146-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">yWithYoga =</span> alpha <span class="sc">+</span> beta) <span class="sc">%&gt;%</span></span>
+<span id="cb146-27"><a href="#cb146-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">thetaNoYoga =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(<span class="sc">-</span>yNoYoga))) <span class="sc">%&gt;%</span></span>
+<span id="cb146-28"><a href="#cb146-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">thetaWithYoga =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(<span class="sc">-</span>yWithYoga))) <span class="sc">%&gt;%</span></span>
+<span id="cb146-29"><a href="#cb146-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">probDiff =</span> thetaWithYoga <span class="sc">-</span> thetaNoYoga)</span>
+<span id="cb146-30"><a href="#cb146-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb146-31"><a href="#cb146-31" aria-hidden="true" tabindex="-1"></a><span class="do">## plot implied theta distribution</span></span>
+<span id="cb146-32"><a href="#cb146-32" aria-hidden="true" tabindex="-1"></a><span class="fu">gf_density</span>(<span class="sc">~</span> probDiff, <span class="at">data =</span> simDF)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-128-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="parameter-estimation-1" class="level4">
+<h4 class="anchored" data-anchor-id="parameter-estimation-1">Parameter estimation</h4>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb147"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb147-1"><a href="#cb147-1" aria-hidden="true" tabindex="-1"></a>drawsDF <span class="ot">=</span> graph2 <span class="sc">%&gt;%</span> <span class="fu">dag_numpyro</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb148"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb148-1"><a href="#cb148-1" aria-hidden="true" tabindex="-1"></a>drawsDF <span class="sc">%&gt;%</span> <span class="fu">dagp_plot</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-130-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>xxx</p>
+</section>
 </section>
 <section id="partial-pooling" class="level3">
 <h3 class="anchored" data-anchor-id="partial-pooling">Partial pooling</h3>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb138"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb138-1"><a href="#cb138-1" aria-hidden="true" tabindex="-1"></a>graph3 <span class="ot">=</span> <span class="fu">dag_create</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb138-2"><a href="#cb138-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Number of Signups"</span>,<span class="st">"k"</span>,</span>
-<span id="cb138-3"><a href="#cb138-3" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">binomial</span>(nTrials,theta),</span>
-<span id="cb138-4"><a href="#cb138-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>nSigned) <span class="sc">%&gt;%</span></span>
-<span id="cb138-5"><a href="#cb138-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Signup Probability"</span>,<span class="st">"theta"</span>,</span>
-<span id="cb138-6"><a href="#cb138-6" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"k"</span>,</span>
-<span id="cb138-7"><a href="#cb138-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span><span class="sc">+</span><span class="fu">exp</span>(<span class="sc">-</span>y))) <span class="sc">%&gt;%</span></span>
-<span id="cb138-8"><a href="#cb138-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Number of Trials"</span>,<span class="st">"nTrials"</span>,</span>
-<span id="cb138-9"><a href="#cb138-9" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"k"</span>,</span>
-<span id="cb138-10"><a href="#cb138-10" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>nTrialCustomers) <span class="sc">%&gt;%</span></span>
-<span id="cb138-11"><a href="#cb138-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Linear Predictor"</span>,<span class="st">"y"</span>,</span>
-<span id="cb138-12"><a href="#cb138-12" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> alpha <span class="sc">+</span> beta <span class="sc">*</span> x,</span>
-<span id="cb138-13"><a href="#cb138-13" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"theta"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb138-14"><a href="#cb138-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Yoga Stretch Flag"</span>,<span class="st">"x"</span>,</span>
-<span id="cb138-15"><a href="#cb138-15" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>yogaStretch,</span>
-<span id="cb138-16"><a href="#cb138-16" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"y"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb138-17"><a href="#cb138-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Gym Intercept"</span>,<span class="st">"alpha"</span>,</span>
-<span id="cb138-18"><a href="#cb138-18" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">normal</span>(mu_alpha,sd_alpha),</span>
-<span id="cb138-19"><a href="#cb138-19" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"y"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb138-20"><a href="#cb138-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Gym Yoga Slope Coeff"</span>,<span class="st">"beta"</span>,</span>
-<span id="cb138-21"><a href="#cb138-21" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">normal</span>(mu_beta,sd_beta),</span>
-<span id="cb138-22"><a href="#cb138-22" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"y"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb138-23"><a href="#cb138-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Avg Crossfit Intercept"</span>,<span class="st">"mu_alpha"</span>,</span>
-<span id="cb138-24"><a href="#cb138-24" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">normal</span>(<span class="sc">-</span><span class="dv">1</span>,<span class="fl">1.5</span>),</span>
-<span id="cb138-25"><a href="#cb138-25" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"alpha"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb138-26"><a href="#cb138-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Avg Crossfit Yoga Slope"</span>,<span class="st">"mu_beta"</span>,</span>
-<span id="cb138-27"><a href="#cb138-27" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">normal</span>(<span class="dv">0</span>,<span class="fl">0.75</span>),</span>
-<span id="cb138-28"><a href="#cb138-28" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"beta"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb138-29"><a href="#cb138-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"SD Crossfit Intercept"</span>,<span class="st">"sd_alpha"</span>,</span>
-<span id="cb138-30"><a href="#cb138-30" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">uniform</span>(<span class="dv">0</span>,<span class="dv">3</span>),</span>
-<span id="cb138-31"><a href="#cb138-31" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"alpha"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb138-32"><a href="#cb138-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"SD Crossfit Yoga Slope"</span>,<span class="st">"sd_beta"</span>,</span>
-<span id="cb138-33"><a href="#cb138-33" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">uniform</span>(<span class="dv">0</span>,<span class="fl">1.5</span>),</span>
-<span id="cb138-34"><a href="#cb138-34" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"beta"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb138-35"><a href="#cb138-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_plate</span>(<span class="st">"Gym"</span>,<span class="st">"j"</span>,</span>
-<span id="cb138-36"><a href="#cb138-36" aria-hidden="true" tabindex="-1"></a>            <span class="at">nodeLabels =</span> <span class="fu">c</span>(<span class="st">"alpha"</span>,<span class="st">"beta"</span>),</span>
-<span id="cb138-37"><a href="#cb138-37" aria-hidden="true" tabindex="-1"></a>            <span class="at">data =</span> gymDF<span class="sc">$</span>gymID,</span>
-<span id="cb138-38"><a href="#cb138-38" aria-hidden="true" tabindex="-1"></a>            <span class="at">addDataNode =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb138-39"><a href="#cb138-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_plate</span>(<span class="st">"Observation"</span>,<span class="st">"i"</span>,</span>
-<span id="cb138-40"><a href="#cb138-40" aria-hidden="true" tabindex="-1"></a>            <span class="at">nodeLabels =</span> <span class="fu">c</span>(<span class="st">"k"</span>,<span class="st">"x"</span>,<span class="st">"j"</span>,</span>
-<span id="cb138-41"><a href="#cb138-41" aria-hidden="true" tabindex="-1"></a>                           <span class="st">"nTrials"</span>,<span class="st">"theta"</span>,<span class="st">"y"</span>))</span>
-<span id="cb138-42"><a href="#cb138-42" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb138-43"><a href="#cb138-43" aria-hidden="true" tabindex="-1"></a>graph3 <span class="sc">%&gt;%</span> <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb149"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb149-1"><a href="#cb149-1" aria-hidden="true" tabindex="-1"></a>graph3 <span class="ot">=</span> <span class="fu">dag_create</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb149-2"><a href="#cb149-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Number of Signups"</span>,<span class="st">"k"</span>,</span>
+<span id="cb149-3"><a href="#cb149-3" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">binomial</span>(nTrials,theta),</span>
+<span id="cb149-4"><a href="#cb149-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>nSigned) <span class="sc">%&gt;%</span></span>
+<span id="cb149-5"><a href="#cb149-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Signup Probability"</span>,<span class="st">"theta"</span>,</span>
+<span id="cb149-6"><a href="#cb149-6" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"k"</span>,</span>
+<span id="cb149-7"><a href="#cb149-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span><span class="sc">+</span><span class="fu">exp</span>(<span class="sc">-</span>y))) <span class="sc">%&gt;%</span></span>
+<span id="cb149-8"><a href="#cb149-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Number of Trials"</span>,<span class="st">"nTrials"</span>,</span>
+<span id="cb149-9"><a href="#cb149-9" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"k"</span>,</span>
+<span id="cb149-10"><a href="#cb149-10" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>nTrialCustomers) <span class="sc">%&gt;%</span></span>
+<span id="cb149-11"><a href="#cb149-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Linear Predictor"</span>,<span class="st">"y"</span>,</span>
+<span id="cb149-12"><a href="#cb149-12" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> alpha <span class="sc">+</span> beta <span class="sc">*</span> x,</span>
+<span id="cb149-13"><a href="#cb149-13" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"theta"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb149-14"><a href="#cb149-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Yoga Stretch Flag"</span>,<span class="st">"x"</span>,</span>
+<span id="cb149-15"><a href="#cb149-15" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>yogaStretch,</span>
+<span id="cb149-16"><a href="#cb149-16" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"y"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb149-17"><a href="#cb149-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Gym Intercept"</span>,<span class="st">"alpha"</span>,</span>
+<span id="cb149-18"><a href="#cb149-18" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">normal</span>(mu_alpha,sd_alpha),</span>
+<span id="cb149-19"><a href="#cb149-19" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"y"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb149-20"><a href="#cb149-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Gym Yoga Slope Coeff"</span>,<span class="st">"beta"</span>,</span>
+<span id="cb149-21"><a href="#cb149-21" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">normal</span>(mu_beta,sd_beta),</span>
+<span id="cb149-22"><a href="#cb149-22" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"y"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb149-23"><a href="#cb149-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Avg Crossfit Intercept"</span>,<span class="st">"mu_alpha"</span>,</span>
+<span id="cb149-24"><a href="#cb149-24" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">normal</span>(<span class="sc">-</span><span class="dv">1</span>,<span class="fl">1.5</span>),</span>
+<span id="cb149-25"><a href="#cb149-25" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"alpha"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb149-26"><a href="#cb149-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Avg Crossfit Yoga Slope"</span>,<span class="st">"mu_beta"</span>,</span>
+<span id="cb149-27"><a href="#cb149-27" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">normal</span>(<span class="dv">0</span>,<span class="fl">0.75</span>),</span>
+<span id="cb149-28"><a href="#cb149-28" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"beta"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb149-29"><a href="#cb149-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"SD Crossfit Intercept"</span>,<span class="st">"sd_alpha"</span>,</span>
+<span id="cb149-30"><a href="#cb149-30" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">uniform</span>(<span class="dv">0</span>,<span class="dv">3</span>),</span>
+<span id="cb149-31"><a href="#cb149-31" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"alpha"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb149-32"><a href="#cb149-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"SD Crossfit Yoga Slope"</span>,<span class="st">"sd_beta"</span>,</span>
+<span id="cb149-33"><a href="#cb149-33" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">uniform</span>(<span class="dv">0</span>,<span class="fl">1.5</span>),</span>
+<span id="cb149-34"><a href="#cb149-34" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"beta"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb149-35"><a href="#cb149-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_plate</span>(<span class="st">"Gym"</span>,<span class="st">"j"</span>,</span>
+<span id="cb149-36"><a href="#cb149-36" aria-hidden="true" tabindex="-1"></a>            <span class="at">nodeLabels =</span> <span class="fu">c</span>(<span class="st">"alpha"</span>,<span class="st">"beta"</span>),</span>
+<span id="cb149-37"><a href="#cb149-37" aria-hidden="true" tabindex="-1"></a>            <span class="at">data =</span> gymDF<span class="sc">$</span>gymID,</span>
+<span id="cb149-38"><a href="#cb149-38" aria-hidden="true" tabindex="-1"></a>            <span class="at">addDataNode =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb149-39"><a href="#cb149-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_plate</span>(<span class="st">"Observation"</span>,<span class="st">"i"</span>,</span>
+<span id="cb149-40"><a href="#cb149-40" aria-hidden="true" tabindex="-1"></a>            <span class="at">nodeLabels =</span> <span class="fu">c</span>(<span class="st">"k"</span>,<span class="st">"x"</span>,<span class="st">"j"</span>,</span>
+<span id="cb149-41"><a href="#cb149-41" aria-hidden="true" tabindex="-1"></a>                           <span class="st">"nTrials"</span>,<span class="st">"theta"</span>,<span class="st">"y"</span>))</span>
+<span id="cb149-42"><a href="#cb149-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb149-43"><a href="#cb149-43" aria-hidden="true" tabindex="-1"></a>graph3 <span class="sc">%&gt;%</span> <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="grViz html-widget html-fill-item" id="htmlwidget-9e5c90bfa43893a2d8ed" style="width:100%;height:464px;"></div>
 <script type="application/json" data-for="htmlwidget-9e5c90bfa43893a2d8ed">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\n  \"8\" [label = \"Avg Crossfit Intercept\nmu_alpha ~ normal(-1,1.5)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"9\" [label = \"Avg Crossfit Yoga Slope\nmu_beta ~ normal(0,0.75)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"10\" [label = \"SD Crossfit Intercept\nsd_alpha ~ uniform(0,3)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"11\" [label = \"SD Crossfit Yoga Slope\nsd_beta ~ uniform(0,1.5)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \nsubgraph cluster2{\nlabel=\"Gym j [12]\"\n  \"6\" [label = \"Gym Intercept\nalpha ~ normal(mu_alpha,sd_alpha)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"7\" [label = \"Gym Yoga Slope Coeff\nbeta ~ normal(mu_beta,sd_beta)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] }\n\nsubgraph cluster3{\nlabel=\"Observation i [44]\"\n  \"1\" [label = \"Number of Signups\nk ~ binomial(nTrials,theta)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"2\" [label = \"Signup Probability\ntheta = 1 / (1 + exp(-y))\", shape = \"ellipse\", peripheries = \"2\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"3\" [label = \"Number of Trials\nnTrials\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"4\" [label = \"Linear Predictor\ny = alpha[j] + beta[j] * x\", shape = \"ellipse\", peripheries = \"2\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"5\" [label = \"Yoga Stretch Flag\nx\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"12\" [label = \"Gym\nj\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] }\n\n\"6\"->\"4\" [style = \"dashed\"] \n\"7\"->\"4\" [style = \"dashed\"] \n\"2\"->\"1\" [style = \"solid\"] \n\"3\"->\"1\" [style = \"solid\"] \n\"4\"->\"2\" [style = \"solid\"] \n\"5\"->\"4\" [style = \"solid\"] \n\"8\"->\"6\" [style = \"solid\"] \n\"9\"->\"7\" [style = \"solid\"] \n\"10\"->\"6\" [style = \"solid\"] \n\"11\"->\"7\" [style = \"solid\"] \n\"12\"->\"4\" [style = \"solid\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
