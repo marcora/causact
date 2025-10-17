@@ -1,5 +1,7 @@
 ---
-title: "causact"
+title: "A Business analyst’s introduction to business analytics (2e)"
+author: "Adam Fleischhacker"
+date: 2025-01-15
 format:
   html:
     toc: true
@@ -19,6 +21,12 @@ theme_set(theme_minimal())
 
 set.seed(123)
 ```
+
+[https://www.causact.com/](https://www.causact.com/#welcome)
+
+![](images/clipboard-340255815.png){width="50%"}
+
+<http://www.amazon.com/dp/B0CFZMKRGX>
 
 ## Introduction
 
@@ -2718,7 +2726,7 @@ draw = drawsDF %>%
   select(alpha_12,beta_12)
 ```
 
-1.  Compute a value for the linear predictor with and without yoga (i.e. `x=1` and `x=0`, respectively) using the formula shown for this node in the generative decision DAG. Plugging in for `x`, we get the two different values of linear preditor `y` that interest us: `x=1` $\rightarrow y_{yoga} = \alpha{12}+\beta{12}*1$) and without yoga (`x=0` $\rightarrow y_{trad} = \alpha{12}+\beta{12}*0 = \alpha_{12}$):
+2.  Compute a value for the linear predictor with and without yoga (i.e. `x=1` and `x=0`, respectively) using the formula shown for this node in the generative decision DAG. Plugging in for `x`, we get the two different values of linear preditor `y` that interest us: `x=1` $\rightarrow y_{yoga} = \alpha{12}+\beta{12}*1$) and without yoga (`x=0` $\rightarrow y_{trad} = \alpha{12}+\beta{12}*0 = \alpha_{12}$):
 
 ```{r}
 draw = draw %>%
@@ -2726,7 +2734,7 @@ draw = draw %>%
   mutate(y_trad = alpha_12)
 ```
 
-1.  Compute the values for `theta` with and without yoga at gym12 using the inverse-logit function (i.e. the link function formula shown for this node in the generative decision DAG):
+3.  Compute the values for `theta` with and without yoga at gym12 using the inverse-logit function (i.e. the link function formula shown for this node in the generative decision DAG):
 
 ```{r}
 draw = draw %>%
@@ -2734,7 +2742,7 @@ draw = draw %>%
   mutate(theta_trad = 1 / (1+exp(-y_trad)))
 ```
 
-1.  Compute the increased probability of signup when using yoga at gym12:
+4.  Compute the increased probability of signup when using yoga at gym12:
 
 ```{r}
 draw = draw %>%
@@ -2775,7 +2783,92 @@ gf_density(~ z_12, data = postDF)
 ```
 
 ```{r}
-summarise_draws(postDF) # or summarise(postDF$z_12)
+summary(postDF$z_12)
 ```
 
 and form only a mild opinion that yoga is probably helpful at gym 12 (i.e. most of the plausible values are above zero).
+
+### Visual advocacy for decisions which improve outcomes of interest
+
+To convert posterior probabilities into decisions, we want a visual that communicates a recommendation. In business, a random variable outcome of interest is usually made more compelling by converting it to some measure of money. Let’s assume that that the value of each new customer is estimated to be \$500 in *net present value* terms. We can then create a mathematical formula for value created by yoga stretching per trial customer:
+
+$$
+\textrm{ValueOfYogaStretchingForGym12} = 500 \times Z_{12}
+$$
+
+and also, represent it computationally:
+
+```{r}
+moneyDF = postDF %>% mutate(ValueCreated = 500 * z_12)
+```
+
+We now have a random variable of the per customer profit estimate if gym12 adopts yoga stretching for the next year versus not adopting yoga stretching. We can summarize this random variable graphically:
+
+```{r}
+gf_density(~ ValueCreated, data = moneyDF) |> gf_refine(scale_x_continuous(labels = dollar_format()))
+```
+
+which shows both the plausibility of losing money as well as making up to say \$100 per customer as a result of the decision. We can find some additional metrics:
+
+```{r}
+summary(moneyDF$ValueCreated)
+```
+
+telling us the median value for gym12 is about \$24 of extra value per customer. This means that we assign a 50/50 chance to being above or below this number in terms of value created per customer. Hence, if it costs extra money (e.g. licensing fees, additional labor expense, additional equipment expense, etc.), say \$25 per customer to offer the class, then this investment at gym12 might not be recovered.
+
+Lastly, since continuous probability estimates are sometimes difficult for decision makers (and ourselves) to understand, we can create a discrete probability distribution by creating bins:
+
+```{r}
+breaks = c(-1000,-20,0,20,40,60,80,100,1000)
+labels = c("<-$20","-$20 - $0","$0 - $20",
+           "$20 - 40$","$40 - $60","$60 - $80",
+           "$80-$100","$100+")
+bins = cut(moneyDF$ValueCreated, 
+           breaks, 
+           include.lowest = T, 
+           right=FALSE, 
+           labels=labels)
+moneyDF$bins = bins  ## add new column
+
+## add label for percentage in each bin
+plotDF = moneyDF %>%
+  group_by(bins) %>%
+  summarize(countInBin = n()) %>%
+  mutate(pctInBin = countInBin / sum(countInBin)) %>%
+  mutate(label = paste0(round(100*pctInBin,0),"%")) %>%
+  mutate(makeMoney = ifelse(bins %in% levels(bins)[1:2],
+                            "Not Profitable",
+                            "Profitable"))
+
+## Create more interpretable plot
+plotDF %>%
+  ggplot(aes(x = bins, y = pctInBin, 
+             fill = makeMoney)) +
+  geom_col(color = "black") +
+  geom_text(aes(label=label), nudge_y = 0.015) +
+  xlab("Value Added Per Trial Customer") +
+  ylab("Probability of Outcome") +
+  scale_fill_manual(values = c("lightcoral",
+                               "cadetblue")) +
+  theme(legend.position = "none") +
+  coord_flip() +
+  ggtitle("Making Yoga Stretching Mandatory for Gym 12")
+```
+
+From the above, we can easily talk to any decision maker about the possiblities for various outcomes. For example, summing the bottom two percentages tells us there is an approximately 14% chance of yoga stretching creating negative value. Additionally, if Crossfit anticipates a cost of \$20 per customer, then there is a 46% chance of not breaking even by using this policy.
+
+## The journey continues
+
+[CONGRATULATIONS!!!]{.smallcaps} You have journeyed through a challenging path and persevered. You are now equipped to “release the BAW”. In your journey, you learned to coordinate three languages – 1) graphical models to aid business communication , 2) probability theory for Bayesian inference, and 3) the R programming language to manipulate and visualize data as well as to give you access to statistical computation. The use of generative DAGs from the `causact` package enabled you to reduce the friction between these languages. As a tradeoff, however, your knowledge in any one of the languages only runs so deep. Now is the time to keep going and pick from the below resources to further develop your skills.
+
+### Additional readings
+
+-   Michael Betancourt (2018Michael Betancourt. 2018. *Towards a Principled Bayesian Workflow (RStan)*. <https://betanalpha.github.io/assets/case_studies/principled_bayesian_workflow.html>.) provides the *scientific philosophy of Bayesian statistics* and associated computational methods with mathematical rigor and beautiful pictures.
+
+-   Gelman, Hill, and Vehtari (2020Gelman, Andrew, Jennifer Hill, and Aki Vehtari. 2020. *Regression and Other Stories*. Cambridge University Press.) dives much deeper into *multilevel regression* than is done in this text. These three authors are gurus of applied Bayesian statistics.
+
+-   Grolemund and Wickham (2018Grolemund, Garrett, and Hadley Wickham. 2018. “R for Data Science.”) is a fundamental read on *R programming*, data manipulation, and using R in analytics workflows.
+
+-   McElreath (2020McElreath, Richard. 2020. *Statistical Rethinking: A Bayesian Course with Examples in r and Stan*. CRC press.) made a pedagogical masterpiece that teaches more mathematically rigorous *Bayesian statistics* in a fun way. I highly recommend this as the next book in your journey.
+
+-   Wilke (2019Wilke, Claus O. 2019. *Fundamentals of Data Visualization: A Primer on Making Informative and Compelling Figures*. O’Reilly Media.) is a wonderful read for exploring *data visualization*. All the code for numerous beautiful `ggplots` is made available to the reader.

@@ -6,8 +6,10 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="author" content="Adam Fleischhacker">
+<meta name="dcterms.date" content="2025-01-15">
 
-<title>causact</title>
+<title>A Business analyst’s introduction to business analytics (2e)</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -201,6 +203,11 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#outcomes-of-interest" id="toc-outcomes-of-interest" class="nav-link" data-scroll-target="#outcomes-of-interest">Outcomes of interest</a></li>
   <li><a href="#computing-posterior-distributions-for-outcomes-of-interest" id="toc-computing-posterior-distributions-for-outcomes-of-interest" class="nav-link" data-scroll-target="#computing-posterior-distributions-for-outcomes-of-interest">Computing posterior distributions for outcomes of interest</a></li>
+  <li><a href="#visual-advocacy-for-decisions-which-improve-outcomes-of-interest" id="toc-visual-advocacy-for-decisions-which-improve-outcomes-of-interest" class="nav-link" data-scroll-target="#visual-advocacy-for-decisions-which-improve-outcomes-of-interest">Visual advocacy for decisions which improve outcomes of interest</a></li>
+  </ul></li>
+  <li><a href="#the-journey-continues" id="toc-the-journey-continues" class="nav-link" data-scroll-target="#the-journey-continues">The journey continues</a>
+  <ul class="collapse">
+  <li><a href="#additional-readings" id="toc-additional-readings" class="nav-link" data-scroll-target="#additional-readings">Additional readings</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -209,14 +216,26 @@ window.Quarto = {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">causact</h1>
+<h1 class="title">A Business analyst’s introduction to business analytics (2e)</h1>
 </div>
 
 
 
 <div class="quarto-title-meta">
 
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Adam Fleischhacker </p>
+          </div>
+  </div>
     
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">January 15, 2025</p>
+    </div>
+  </div>
   
     
   </div>
@@ -238,6 +257,9 @@ window.Quarto = {
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<p><a href="https://www.causact.com/#welcome">https://www.causact.com/</a></p>
+<p><img src="images/clipboard-340255815.png" class="img-fluid" style="width:50.0%"></p>
+<p><a href="http://www.amazon.com/dp/B0CFZMKRGX" class="uri">http://www.amazon.com/dp/B0CFZMKRGX</a></p>
 <section id="introduction" class="level2">
 <h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
 <p>There are three languages at the core of any data analysis: narrative, math, and code.</p>
@@ -5025,7 +5047,7 @@ Note
 <span id="cb163-2"><a href="#cb163-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_sample</span>(<span class="at">n=</span><span class="dv">1</span>) <span class="sc">%&gt;%</span> <span class="co"># get a random draw</span></span>
 <span id="cb163-3"><a href="#cb163-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(alpha_12,beta_12)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<ol type="1">
+<ol start="2" type="1">
 <li>Compute a value for the linear predictor with and without yoga (i.e.&nbsp;<code>x=1</code> and <code>x=0</code>, respectively) using the formula shown for this node in the generative decision DAG. Plugging in for <code>x</code>, we get the two different values of linear preditor <code>y</code> that interest us: <code>x=1</code> <span class="math inline">\(\rightarrow y_{yoga} = \alpha{12}+\beta{12}*1\)</span>) and without yoga (<code>x=0</code> <span class="math inline">\(\rightarrow y_{trad} = \alpha{12}+\beta{12}*0 = \alpha_{12}\)</span>):</li>
 </ol>
 <div class="cell">
@@ -5033,7 +5055,7 @@ Note
 <span id="cb164-2"><a href="#cb164-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">y_yoga =</span> alpha_12 <span class="sc">+</span> beta_12 <span class="sc">*</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb164-3"><a href="#cb164-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">y_trad =</span> alpha_12)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<ol type="1">
+<ol start="3" type="1">
 <li>Compute the values for <code>theta</code> with and without yoga at gym12 using the inverse-logit function (i.e.&nbsp;the link function formula shown for this node in the generative decision DAG):</li>
 </ol>
 <div class="cell">
@@ -5041,7 +5063,7 @@ Note
 <span id="cb165-2"><a href="#cb165-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">theta_yoga =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span><span class="sc">+</span><span class="fu">exp</span>(<span class="sc">-</span>y_yoga))) <span class="sc">%&gt;%</span></span>
 <span id="cb165-3"><a href="#cb165-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">theta_trad =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span><span class="sc">+</span><span class="fu">exp</span>(<span class="sc">-</span>y_trad)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<ol type="1">
+<ol start="4" type="1">
 <li>Compute the increased probability of signup when using yoga at gym12:</li>
 </ol>
 <div class="cell">
@@ -5117,127 +5139,103 @@ Z_{12} \equiv \textrm{ Probability increase due to yoga stretching at gym 12}
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb170"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb170-1"><a href="#cb170-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summarise_draws</span>(postDF) <span class="co"># or summarise(postDF$z_12)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output-display">
-<div class="kable-table">
-<table class="caption-top table table-sm table-striped small">
-<colgroup>
-<col style="width: 13%">
-<col style="width: 9%">
-<col style="width: 9%">
-<col style="width: 8%">
-<col style="width: 8%">
-<col style="width: 9%">
-<col style="width: 9%">
-<col style="width: 8%">
-<col style="width: 10%">
-<col style="width: 10%">
-</colgroup>
-<thead>
-<tr class="header">
-<th style="text-align: left;">variable</th>
-<th style="text-align: right;">mean</th>
-<th style="text-align: right;">median</th>
-<th style="text-align: right;">sd</th>
-<th style="text-align: right;">mad</th>
-<th style="text-align: right;">q5</th>
-<th style="text-align: right;">q95</th>
-<th style="text-align: right;">rhat</th>
-<th style="text-align: right;">ess_bulk</th>
-<th style="text-align: right;">ess_tail</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td style="text-align: left;">alpha_12</td>
-<td style="text-align: right;">-2.2472</td>
-<td style="text-align: right;">-2.2198</td>
-<td style="text-align: right;">0.5140</td>
-<td style="text-align: right;">0.5010</td>
-<td style="text-align: right;">-3.1171</td>
-<td style="text-align: right;">-1.4626</td>
-<td style="text-align: right;">1.0004</td>
-<td style="text-align: right;">1936</td>
-<td style="text-align: right;">1736</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">beta_12</td>
-<td style="text-align: right;">0.4880</td>
-<td style="text-align: right;">0.5074</td>
-<td style="text-align: right;">0.5725</td>
-<td style="text-align: right;">0.4108</td>
-<td style="text-align: right;">-0.4610</td>
-<td style="text-align: right;">1.3968</td>
-<td style="text-align: right;">1.0010</td>
-<td style="text-align: right;">2579</td>
-<td style="text-align: right;">2073</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">y_yoga</td>
-<td style="text-align: right;">-1.7592</td>
-<td style="text-align: right;">-1.7194</td>
-<td style="text-align: right;">0.7653</td>
-<td style="text-align: right;">0.6891</td>
-<td style="text-align: right;">-3.0460</td>
-<td style="text-align: right;">-0.5973</td>
-<td style="text-align: right;">0.9999</td>
-<td style="text-align: right;">2067</td>
-<td style="text-align: right;">2265</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">y_trad</td>
-<td style="text-align: right;">-2.2472</td>
-<td style="text-align: right;">-2.2198</td>
-<td style="text-align: right;">0.5140</td>
-<td style="text-align: right;">0.5010</td>
-<td style="text-align: right;">-3.1171</td>
-<td style="text-align: right;">-1.4626</td>
-<td style="text-align: right;">1.0004</td>
-<td style="text-align: right;">1936</td>
-<td style="text-align: right;">1736</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">theta_yoga</td>
-<td style="text-align: right;">0.1700</td>
-<td style="text-align: right;">0.1520</td>
-<td style="text-align: right;">0.1013</td>
-<td style="text-align: right;">0.0874</td>
-<td style="text-align: right;">0.0454</td>
-<td style="text-align: right;">0.3550</td>
-<td style="text-align: right;">0.9999</td>
-<td style="text-align: right;">2067</td>
-<td style="text-align: right;">2265</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">theta_trad</td>
-<td style="text-align: right;">0.1044</td>
-<td style="text-align: right;">0.0980</td>
-<td style="text-align: right;">0.0450</td>
-<td style="text-align: right;">0.0433</td>
-<td style="text-align: right;">0.0424</td>
-<td style="text-align: right;">0.1881</td>
-<td style="text-align: right;">1.0004</td>
-<td style="text-align: right;">1936</td>
-<td style="text-align: right;">1736</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">z_12</td>
-<td style="text-align: right;">0.0656</td>
-<td style="text-align: right;">0.0515</td>
-<td style="text-align: right;">0.0813</td>
-<td style="text-align: right;">0.0546</td>
-<td style="text-align: right;">-0.0327</td>
-<td style="text-align: right;">0.2129</td>
-<td style="text-align: right;">1.0007</td>
-<td style="text-align: right;">2337</td>
-<td style="text-align: right;">1624</td>
-</tr>
-</tbody>
-</table>
-</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb170"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb170-1"><a href="#cb170-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(postDF<span class="sc">$</span>z_12)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+-0.2027  0.0182  0.0515  0.0656  0.0956  0.6562 </code></pre>
 </div>
 </div>
 <p>and form only a mild opinion that yoga is probably helpful at gym 12 (i.e.&nbsp;most of the plausible values are above zero).</p>
+</section>
+<section id="visual-advocacy-for-decisions-which-improve-outcomes-of-interest" class="level3">
+<h3 class="anchored" data-anchor-id="visual-advocacy-for-decisions-which-improve-outcomes-of-interest">Visual advocacy for decisions which improve outcomes of interest</h3>
+<p>To convert posterior probabilities into decisions, we want a visual that communicates a recommendation. In business, a random variable outcome of interest is usually made more compelling by converting it to some measure of money. Let’s assume that that the value of each new customer is estimated to be $500 in <em>net present value</em> terms. We can then create a mathematical formula for value created by yoga stretching per trial customer:</p>
+<p><span class="math display">\[
+\textrm{ValueOfYogaStretchingForGym12} = 500 \times Z_{12}
+\]</span></p>
+<p>and also, represent it computationally:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb172"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb172-1"><a href="#cb172-1" aria-hidden="true" tabindex="-1"></a>moneyDF <span class="ot">=</span> postDF <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">ValueCreated =</span> <span class="dv">500</span> <span class="sc">*</span> z_12)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>We now have a random variable of the per customer profit estimate if gym12 adopts yoga stretching for the next year versus not adopting yoga stretching. We can summarize this random variable graphically:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb173"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb173-1"><a href="#cb173-1" aria-hidden="true" tabindex="-1"></a><span class="fu">gf_density</span>(<span class="sc">~</span> ValueCreated, <span class="at">data =</span> moneyDF) <span class="sc">|&gt;</span> <span class="fu">gf_refine</span>(<span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> <span class="fu">dollar_format</span>()))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-149-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>which shows both the plausibility of losing money as well as making up to say $100 per customer as a result of the decision. We can find some additional metrics:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb174"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb174-1"><a href="#cb174-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(moneyDF<span class="sc">$</span>ValueCreated)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+-101.34    9.12   25.77   32.78   47.80  328.11 </code></pre>
+</div>
+</div>
+<p>telling us the median value for gym12 is about $24 of extra value per customer. This means that we assign a 50/50 chance to being above or below this number in terms of value created per customer. Hence, if it costs extra money (e.g.&nbsp;licensing fees, additional labor expense, additional equipment expense, etc.), say $25 per customer to offer the class, then this investment at gym12 might not be recovered.</p>
+<p>Lastly, since continuous probability estimates are sometimes difficult for decision makers (and ourselves) to understand, we can create a discrete probability distribution by creating bins:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb176"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb176-1"><a href="#cb176-1" aria-hidden="true" tabindex="-1"></a>breaks <span class="ot">=</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1000</span>,<span class="sc">-</span><span class="dv">20</span>,<span class="dv">0</span>,<span class="dv">20</span>,<span class="dv">40</span>,<span class="dv">60</span>,<span class="dv">80</span>,<span class="dv">100</span>,<span class="dv">1000</span>)</span>
+<span id="cb176-2"><a href="#cb176-2" aria-hidden="true" tabindex="-1"></a>labels <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"&lt;-$20"</span>,<span class="st">"-$20 - $0"</span>,<span class="st">"$0 - $20"</span>,</span>
+<span id="cb176-3"><a href="#cb176-3" aria-hidden="true" tabindex="-1"></a>           <span class="st">"$20 - 40$"</span>,<span class="st">"$40 - $60"</span>,<span class="st">"$60 - $80"</span>,</span>
+<span id="cb176-4"><a href="#cb176-4" aria-hidden="true" tabindex="-1"></a>           <span class="st">"$80-$100"</span>,<span class="st">"$100+"</span>)</span>
+<span id="cb176-5"><a href="#cb176-5" aria-hidden="true" tabindex="-1"></a>bins <span class="ot">=</span> <span class="fu">cut</span>(moneyDF<span class="sc">$</span>ValueCreated, </span>
+<span id="cb176-6"><a href="#cb176-6" aria-hidden="true" tabindex="-1"></a>           breaks, </span>
+<span id="cb176-7"><a href="#cb176-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">include.lowest =</span> T, </span>
+<span id="cb176-8"><a href="#cb176-8" aria-hidden="true" tabindex="-1"></a>           <span class="at">right=</span><span class="cn">FALSE</span>, </span>
+<span id="cb176-9"><a href="#cb176-9" aria-hidden="true" tabindex="-1"></a>           <span class="at">labels=</span>labels)</span>
+<span id="cb176-10"><a href="#cb176-10" aria-hidden="true" tabindex="-1"></a>moneyDF<span class="sc">$</span>bins <span class="ot">=</span> bins  <span class="do">## add new column</span></span>
+<span id="cb176-11"><a href="#cb176-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb176-12"><a href="#cb176-12" aria-hidden="true" tabindex="-1"></a><span class="do">## add label for percentage in each bin</span></span>
+<span id="cb176-13"><a href="#cb176-13" aria-hidden="true" tabindex="-1"></a>plotDF <span class="ot">=</span> moneyDF <span class="sc">%&gt;%</span></span>
+<span id="cb176-14"><a href="#cb176-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(bins) <span class="sc">%&gt;%</span></span>
+<span id="cb176-15"><a href="#cb176-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">countInBin =</span> <span class="fu">n</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb176-16"><a href="#cb176-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">pctInBin =</span> countInBin <span class="sc">/</span> <span class="fu">sum</span>(countInBin)) <span class="sc">%&gt;%</span></span>
+<span id="cb176-17"><a href="#cb176-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">label =</span> <span class="fu">paste0</span>(<span class="fu">round</span>(<span class="dv">100</span><span class="sc">*</span>pctInBin,<span class="dv">0</span>),<span class="st">"%"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb176-18"><a href="#cb176-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">makeMoney =</span> <span class="fu">ifelse</span>(bins <span class="sc">%in%</span> <span class="fu">levels</span>(bins)[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>],</span>
+<span id="cb176-19"><a href="#cb176-19" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"Not Profitable"</span>,</span>
+<span id="cb176-20"><a href="#cb176-20" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"Profitable"</span>))</span>
+<span id="cb176-21"><a href="#cb176-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb176-22"><a href="#cb176-22" aria-hidden="true" tabindex="-1"></a><span class="do">## Create more interpretable plot</span></span>
+<span id="cb176-23"><a href="#cb176-23" aria-hidden="true" tabindex="-1"></a>plotDF <span class="sc">%&gt;%</span></span>
+<span id="cb176-24"><a href="#cb176-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> bins, <span class="at">y =</span> pctInBin, </span>
+<span id="cb176-25"><a href="#cb176-25" aria-hidden="true" tabindex="-1"></a>             <span class="at">fill =</span> makeMoney)) <span class="sc">+</span></span>
+<span id="cb176-26"><a href="#cb176-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">color =</span> <span class="st">"black"</span>) <span class="sc">+</span></span>
+<span id="cb176-27"><a href="#cb176-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label=</span>label), <span class="at">nudge_y =</span> <span class="fl">0.015</span>) <span class="sc">+</span></span>
+<span id="cb176-28"><a href="#cb176-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"Value Added Per Trial Customer"</span>) <span class="sc">+</span></span>
+<span id="cb176-29"><a href="#cb176-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"Probability of Outcome"</span>) <span class="sc">+</span></span>
+<span id="cb176-30"><a href="#cb176-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"lightcoral"</span>,</span>
+<span id="cb176-31"><a href="#cb176-31" aria-hidden="true" tabindex="-1"></a>                               <span class="st">"cadetblue"</span>)) <span class="sc">+</span></span>
+<span id="cb176-32"><a href="#cb176-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"none"</span>) <span class="sc">+</span></span>
+<span id="cb176-33"><a href="#cb176-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_flip</span>() <span class="sc">+</span></span>
+<span id="cb176-34"><a href="#cb176-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Making Yoga Stretching Mandatory for Gym 12"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-151-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>From the above, we can easily talk to any decision maker about the possiblities for various outcomes. For example, summing the bottom two percentages tells us there is an approximately 14% chance of yoga stretching creating negative value. Additionally, if Crossfit anticipates a cost of $20 per customer, then there is a 46% chance of not breaking even by using this policy.</p>
+</section>
+</section>
+<section id="the-journey-continues" class="level2">
+<h2 class="anchored" data-anchor-id="the-journey-continues">The journey continues</h2>
+<p><span class="smallcaps">CONGRATULATIONS!!!</span> You have journeyed through a challenging path and persevered. You are now equipped to “release the BAW”. In your journey, you learned to coordinate three languages – 1) graphical models to aid business communication , 2) probability theory for Bayesian inference, and 3) the R programming language to manipulate and visualize data as well as to give you access to statistical computation. The use of generative DAGs from the <code>causact</code> package enabled you to reduce the friction between these languages. As a tradeoff, however, your knowledge in any one of the languages only runs so deep. Now is the time to keep going and pick from the below resources to further develop your skills.</p>
+<section id="additional-readings" class="level3">
+<h3 class="anchored" data-anchor-id="additional-readings">Additional readings</h3>
+<ul>
+<li><p>Michael Betancourt (2018Michael Betancourt. 2018. <em>Towards a Principled Bayesian Workflow (RStan)</em>. <a href="https://betanalpha.github.io/assets/case_studies/principled_bayesian_workflow.html" class="uri">https://betanalpha.github.io/assets/case_studies/principled_bayesian_workflow.html</a>.) provides the <em>scientific philosophy of Bayesian statistics</em> and associated computational methods with mathematical rigor and beautiful pictures.</p></li>
+<li><p>Gelman, Hill, and Vehtari (2020Gelman, Andrew, Jennifer Hill, and Aki Vehtari. 2020. <em>Regression and Other Stories</em>. Cambridge University Press.) dives much deeper into <em>multilevel regression</em> than is done in this text. These three authors are gurus of applied Bayesian statistics.</p></li>
+<li><p>Grolemund and Wickham (2018Grolemund, Garrett, and Hadley Wickham. 2018. “R for Data Science.”) is a fundamental read on <em>R programming</em>, data manipulation, and using R in analytics workflows.</p></li>
+<li><p>McElreath (2020McElreath, Richard. 2020. <em>Statistical Rethinking: A Bayesian Course with Examples in r and Stan</em>. CRC press.) made a pedagogical masterpiece that teaches more mathematically rigorous <em>Bayesian statistics</em> in a fun way. I highly recommend this as the next book in your journey.</p></li>
+<li><p>Wilke (2019Wilke, Claus O. 2019. <em>Fundamentals of Data Visualization: A Primer on Making Informative and Compelling Figures</em>. O’Reilly Media.) is a wonderful read for exploring <em>data visualization</em>. All the code for numerous beautiful <code>ggplots</code> is made available to the reader.</p></li>
+</ul>
 </section>
 </section>
 
