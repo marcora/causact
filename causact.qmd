@@ -1420,15 +1420,15 @@ drawsDF = graph |> dag_numpyro()
 
 And then compare data simulated from a random posterior draw to the observed data. *Actually, we will compare simulated data from several draws, say 20, to get a fuller picture of what the posterior implies for observed data.* By creating multiple simulated datasets, we can see how much the data distributions vary. Observed data is subject to lots of randomness, so we just want to ensure that the observed randomness falls within the realm of our plausible narratives.
 
-Getting the twenty random draws, which is technically a random sample of the posterior representative sample, we place them in `params`:
+Getting the twenty random draws, which is technically a random sample of the posterior representative sample, we place them in `paramsDF`:
 
 ```{r}
-params = drawsDF |> slice_sample(n=20)
+paramsDF = drawsDF |> slice_sample(n=20)
 
-params
+paramsDF
 ```
 
-Then, for each row of `params`, we will simulate 31 observations. Since we are going to do the same simulation 20 times, once for each row of parameters, I write a function which returns a vector of simulated tree heights. Again, we convert the generative DAG recipe to code that enables our posterior predictive check:
+Then, for each row of `paramsDF`, we will simulate 31 observations. Since we are going to do the same simulation 20 times, once for each row of parameters, I write a function which returns a vector of simulated tree heights. Again, we convert the generative DAG recipe to code that enables our posterior predictive check:
 
 ```{r}
 simData = function(nu,mu,sigma) {
@@ -1440,7 +1440,7 @@ simData = function(nu,mu,sigma) {
 N.B.: The Student-t distribution in `causact` is based on the `rlst()` function in the `extraDistr` package.
 
 ```{r}
-d <- params |>
+d <- paramsDF |>
   mutate(simID = row_number()) |>
   rowwise() |> 
   mutate(simData = list(simData(nu, mu, sigma))) |> 
@@ -2248,9 +2248,9 @@ drawsDF %>% dagp_plot()
 Perhaps, the fact that these probability estimates align with the emprical estimates (above) should seem comforting, but there is something sinister lurking in our model choice. Recall that our visual sensibilities have already noticed differences among the gyms. So, it should be expected that we are not accurately modeling the data generation process when ignoring these differences. By performing a posterior predictive check, we see how looking at this overly simple *complete pooling* model fails to capture some of the patterns observed in the actual data.
 
 ```{r}
-params = drawsDF |> slice_sample(n=20)
+paramsDF = drawsDF |> slice_sample(n=20)
 
-params
+paramsDF
 ```
 
 ```{r}
@@ -2267,7 +2267,7 @@ simData <- function(theta_0, theta_1, data) {
 ```
 
 ```{r}
-d <- params |>
+d <- paramsDF |>
   mutate(simID = row_number()) |>
   rowwise() |> 
   mutate(simData = list(simData(theta_0, theta_1, gymDF))) |> 
@@ -2413,9 +2413,109 @@ drawsDF = graph2 %>% dag_numpyro()
 drawsDF %>% dagp_plot()
 ```
 
-xxx
+Recall that these are components of a linear predictor (i.e. $\alpha + \beta x$). If the linear predictor is zero, that corresponds to a probability of 50%. Hence, values for $\alpha < 0$ would imply base conversion rates less than 50%. Values for $\beta$ indicate whether that base probability should be adjusted up or down; $\beta \lt 0$ implies a negative effect for the yoga stretching routine and $\beta \gt 0$ indicates that the effect is positive.
+
+```{r}
+plotDF = gymDF %>%
+  mutate(stretchType = 
+           ifelse(yogaStretch == 1, 
+                  "Yoga Stretch", 
+                  "Traditional"))
+
+ggplot(plotDF, 
+       aes(x = timePeriod, #map time to x-axis
+           y = nTrialCustomers, #map numTrials to y-axis
+           fill = stretchType #map fill to stretch type
+                  )) + 
+  geom_col(width = 0.75, 
+           alpha = 0.55) +  # use transparency
+  geom_col(width = 0.75, 
+           aes(y = nSigned)) + # different y-mapping
+  facet_wrap(vars(gymID), labeller = label_both) + 
+  theme_minimal(11) + 
+  theme(plot.caption = 
+          element_text(size = 9, face = "italic"),
+        legend.position = "bottom") +
+  ylab("# of Trial Customers") +
+  labs(caption = 
+         "Darker fill for # of sign-ups.")
+```
+
+Comparing the estimates above with the gym data from the top (copied above for convenience), notice how the posterior estimates correspond with your expectations. The $\alpha$ values with the smallest credible intervals are for gyms that have the largest number of trial customers participating in trials with traditional stretching (i.e. gyms 2, 5, and 8). Similarly, the $\beta$ values with the smallest credible intervals are for gyms that have the largest number of trial customers participating in Yoga stretching classes (i.e. gyms 1 and 4). The opposite is also observable. Gyms lacking data for traditional stretching have wide credible intervals for $\alpha$ (e.g. gym 10) and gyms lacking data for yoga stretching do not improve on the prior uncertainty in $\beta$ (e.g. gyms 11 and 12).
+
+This no pooling model is not terrible in the sense that each gym gets statistically modeled. Let’s do some challenging data manipulation and do a posterior predictive check:
+
+```{r}
+## get DF of observed data and remove target measure
+simDF = gymDF %>% select(-nSigned)
+
+## get 20 random draws of posterior
+paramsDF = drawsDF %>%
+  slice_sample(n=20) %>%
+  mutate(sampDrawID = row_number()) 
+
+## when data like gym_id is in the name of column 
+## headings, e.g. alpha_4,
+## we use the tidyr package pivot_longer function 
+## to turn headings into data
+## and extract the gymID information from the heading
+tidyParamDF = paramsDF %>% 
+    pivot_longer(cols = -sampDrawID) %>%
+    mutate(gymID = str_extract(name, '[0-9]+')) %>%
+    mutate(gymID = as.integer(gymID)) %>%
+    mutate(paramName = str_extract(name, '[:alpha:]+'))
+
+## now we get explanatory variable info 
+## combined with relevant params
+simDF = simDF %>% left_join(tidyParamDF, by = "gymID") 
+## 44 observations * 2 params per row * 20 sims 
+## = 1,760 rows
+
+## get relevant alpha and beta on same row
+simPredDF = simDF %>%
+  pivot_wider(id_cols = gymID:sampDrawID,
+              names_from = paramName,
+              values_from = value)
+
+## if no yoga, then y=alpha.  If yoga, then y=alpha+beta
+simPredDF = simPredDF %>%
+  mutate(y = ifelse(yogaStretch == 0, 
+                    alpha, alpha+beta)) %>%
+  mutate(theta = 1 / (1 + exp(-y))) %>%
+  mutate(nSigned = rbinom(n = n(),
+                          size = nTrialCustomers,
+                          prob = theta))
+
+obsDF = tibble(obs = gymDF$nSigned)
+
+colors = c("simulated" = "cadetblue", 
+           "observed" = "navyblue")
+
+## make plot
+ggplot(simPredDF) +
+  stat_density(aes(x=nSigned, 
+                   group = sampDrawID,
+                   color = "simulated"),
+               geom = "line",
+               position = "identity") +
+  stat_density(data = obsDF, aes(x=obs, 
+                                 color = "observed"),
+               geom = "line",  
+               position = "identity",
+               lwd = 2) +
+  scale_color_manual(values = colors) +
+  labs(x = "# of Monthly Signups",
+       y = "Density Estimated from Data",
+       color = "Data Type")
+```
+
+This posterior predictive check looks really good. Yet, the estimates above revealed there are credible intervals which can be made smaller; uncertainty bands can be narrowed for gym’s missing one type of class. We know, from previous observation at all the gyms, that yoga’s effect seems small. Hence, the wide uncertainty bands are not warranted. Going the other way, we should have more confidence in gym 10’s recruitment rate (). Gym 10 is a star performer and I do not think dropping the yoga-stretch will lead to enormous drops in rate. Overall, I think we should agree that learning about one gym might tell us something about another gym. In fact, I would argue that learning about 12 gym’s should tell us what we might expect when the next 100 gyms are opened. The next model explores this and shows us we can do better.
 
 ### Partial pooling
+
+The partial pooling model imagines that the Crossfit Gyms business model produces gyms with similar characteristics. Some gyms will do better than average and some gyms will do worse, but there is some relationship between each gym’s performance. In this case, learning about one gym’s success in recruiting provides information about that gym as well as the entire population of Crossfit gyms.
+
+To accomodate this structure (i.e. known as hierarchical or multi-level structure), we add parent nodes to the gym-level coefficients in the previous generative DAG (stored in `graph2`) and change the statistical model for those gym-level coefficients as well. The partial pooling model generative DAG (`graph3`) can be specified as:
 
 ```{r}
 graph3 = dag_create() %>%
@@ -2463,4 +2563,219 @@ graph3 = dag_create() %>%
 graph3 %>% dag_render()
 ```
 
-\
+::: callout-note
+**Model with partially pooled observations** - all gyms share common parent nodes. The data informs both the parameters of the parent nodes as well as the parameters of their children, i.e. the gym-level coefficients. Think of gyms as children of the Crossfit chain - each child is different, but probably shares some underlying characterstics.
+:::
+
+Take note of the top row of random variables in the generative DAG above, which characterize the population of gyms. Think of the first two nodes as characterizing the base conversion rate for the population of crossfit gyms - one represents an expectation of any single gym’s intercept and the other represents how much deviation should be expected between the intercept’s of all the gyms. For example, a high `mu_alpha` and a small `sd_alpha` would suggest any randomly chosen Crossfit gym will have a high base-level probability for membership sign-ups and additionally, no matter which gym is chosen, its likely to have a similarly high base-level probability.
+
+For priors, we used our previous prior for gym-level intercept to now be the prior for its parent, `mu_alpha` which is the expected base intercept for any Crossfit gym. The standard deviation component, `sd_alpha`, uses a uniform distribution that is twice the standard deviation prior for `mu_alpha`; chosen so the variation in base conversion rates will be on a similar scale to our own uncertainty in the corresponding mean, i.e. `mu_alpha`.
+
+The next two nodes atop the generative DAG suggest that every gym’s slope coefficient for yoga is drawn from a distribution characterized by an average effect of yoga stretching for any Crossfit gym, `mu_beta`, and a standard deviation, `sd_beta` measuring how likely any individual gym’s effect might deviate from the average. Priors are chosen as was done for the first two nodes.
+
+Through these population parameters, each gym’s $\alpha_j$ and $\beta_j$ are related; in cases of minimal gym data, the population parameters will be very important in estimating gym performance, conversely, in cases a gym shows strong deviation from the population parameters over a lot of trial customers, then these population parameters will get ignored.
+
+With generative DAG in place, we can compute and visualize the posterior in the standard way:
+
+```{r}
+drawsDF = graph3 %>% dag_numpyro()
+drawsDF %>% dagp_plot()
+```
+
+The figure below shows a slightly different snapshot of the posterior distribution. In addition to the partial pooling posterior, the previous *no-pooling* posterior is also put on the graph for comparison. This will help us see what gains are made (or not) by adding the four hyperparameters (i.e. `mu_alpha`,`mu_beta`,`sd_alpha`,`sd_beta`).
+
+![](images/clipboard-4243588728.png)
+
+Visually comparing the estimates of the two models helps us learn how to think about the multi-level model’s (i.e. partial pooling) interpretation:
+
+-   Uncertainty interval widths have shrunk; especially for gym/stretching combinations that have yet to be seen. For example, gym10 has only two observations, both yoga, no traditional stretching observations. Now look at the change in , the base conversion rate parameter without yoga. Its a narrower interval than with no pooling. The narrowness is because we have learned about the effects of yoga from the other gyms and hence, can reason better about this unobserved base rate. This base rate remains high because we have also learned that differences due to yoga are never that dramatic.
+
+-   There is increased confidence that yoga stretching would be effective at each gym. Look at the rightward shift of most of the partial pooling `beta` estimates. Also, `mu_beta`, the average effect of yoga is clearly greater than zero; hence, it seems like a good idea for Crossfit to promote yoga.
+
+-   Not all gym’s are equal. Looking at gym 9 where there are 3 time periods of observations - one with traditional stretching that seemed better than the others. From the partial-pooling posterior, you see a rightward shift of `beta_9` as compared to the no-pooling model because we’ve learned that yoga works at other gyms. The uncertainty interval is clearly both positive and negative indicating we need more data to confidently dismiss or accept the idea of yoga.
+
+-   Both `alpha` and `beta` intervals in the partial pooling model often (but not always) get pulled towards their means, `mu_alpha` and `mu_beta` respectively. Because we are sharing information through these parents, their impact gets felt at the gym level - especially in cases of gym’s without much data. For example, gym 12 only has one time period of observation, so both `alpha_12` and `beta_12` intervals are pushed towards the expected values of their parent nodes. Gym 5 has alot of data and as a result does not respond to these parental node influences.
+
+-   The interval for `sd_alpha` being away from zero suggests that there is alot of deviation between gyms in terms of average expected base conversion rate. Recruitment rate is quite gym-specific. We can also see this in the original data as gym 10 seems exceptional and gym 2 needs new management.
+
+Overall, the partial pooling model is mildly helpful in reducing our uncertainty. Perhaps the best conclusion enabled by partial pooiling is that `mu_beta` being greater than zero; yoga is helpful, a point that was not crystal clear when just looking at the gym data. More importantly, this partial-pooling model tells a story of related gyms where insights at one gym help inform our opinion about other gyms.
+
+#### Posterior predictive checks
+
+While these more confident and revealing estimates seem like a good thing, a posterior predictive check is in order to ensure that our model is still capable of producing data that might occassionally look like the actual data that we saw. Below is code for the posterior predictive check - its identical to the no-pooling model as we do NOT need to worry about the hyperparameters. As long as we have the parent-nodes of the linear-predictor, we do not need to worry about how they were generated by the grand-parent nodes.
+
+```{r}
+simDF = gymDF %>% select(-nSigned)
+
+## get 20 random draws of posterior
+paramsDF = drawsDF %>%
+  slice_sample(n=20) %>%
+  mutate(sampDrawID = row_number())
+
+tidyParamDF = paramsDF %>% 
+    pivot_longer(cols = -sampDrawID) %>%
+    mutate(gymID = str_extract(name, '[0-9]+')) %>%
+    mutate(gymID = as.integer(gymID)) %>%
+    mutate(paramName = str_extract(name, '[:alpha:]+'))
+
+## combine needed info
+simDF = simDF %>% left_join(tidyParamDF, by = "gymID") 
+
+## get relevant alpha and beta on same row
+simPredDF = simDF %>%
+  pivot_wider(id_cols = gymID:sampDrawID,
+              names_from = paramName,
+              values_from = value)
+
+## if no yoga, then y=alpha. If yoga,then y=alpha+beta
+simPredDF = simPredDF %>%
+  mutate(y = ifelse(yogaStretch == 0, 
+                    alpha, alpha+beta)) %>%
+  mutate(theta = 1 / (1 + exp(-y))) %>%
+  mutate(nSigned = rbinom(n = n(),
+                          size = nTrialCustomers,
+                          prob = theta))
+
+obsDF = tibble(obs = gymDF$nSigned)
+
+colors = c("simulated" = "cadetblue", 
+           "observed" = "navyblue")
+
+## make plot
+ggplot(simPredDF) +
+  stat_density(aes(x=nSigned, 
+                   group = sampDrawID,
+                   color = "simulated"),
+               geom = "line", 
+               position = "identity") +
+  stat_density(data = obsDF, aes(x=obs, 
+                                 color = "observed"),
+               geom = "line",  
+               position = "identity",
+               lwd = 2) +
+  scale_color_manual(values = colors) +
+  labs(x = "# of Monthly Signups",
+       y = "Density Estimated from Data",
+       color = "Data Type")
+```
+
+The figure above is encouraging!! It looks like the actual data might get generated from our posterior distribution. The partial pooling model seems to work! Hooray! Next chapter we interpret the results of this model for decision making.
+
+## Compelling decisions and actions under uncertainty
+
+We now continue last chapter’s investigation of Crossfit Gym’s use of yoga. Our goal is to bring the mathematical estimates of our posterior distribution’s parameters back into the real-world with compelling and visually-based recommendations. To do this, we 1) define our *outcomes of interest*, 2) *compute a posterior distribution* for those outcomes, and 3) communicate our beliefs about those outcomes by *visualizing the outcomes of interest*.
+
+### Outcomes of interest
+
+Our main outcome of interest is signup probability. We will investigate signup probability by investigating that particular node in relation to our decision. Representing this is the deceptively simple generative decision DAG shown below.
+
+```{r}
+dag_create() %>%
+  dag_node("Yoga Stretching?","yoga",
+           dec = TRUE) %>%
+  dag_node("Signup Probability","prob") %>%
+  dag_edge("yoga","prob") %>%
+  dag_plate("Stretch Type","",
+            nodeLabels = c("yoga","prob")) %>%
+  dag_render(shortLabel = TRUE, wrapWidth = 12)
+```
+
+The top-down narrative of the generative decision DAG above is as follows. Crossfit Gyms decides on whether to offer yoga stretching and the sign-up probability across their gyms changes as a result. Our job is to quantify this change and form an opinion on whether to offer yoga stretching or not across the gyms; we will form our opinion using the posterior distribution.
+
+### Computing posterior distributions for outcomes of interest
+
+The last model in the previous chapter gets us the generative DAG of Figure [24.1](https://www.causact.com/compelling-decisions-and-actions-under-uncertainty#fig:partPoolingGM2). Running it through the `dag_numpyro()` function yields a posterior distribution, but our job as analysts is not over. We now have to make sense of the posterior distribution and communicate its implications to stakeholders.
+
+Rerun the analysis at the end of the previous chapter concluding with:
+
+```{r}
+drawsDF = graph3 %>% dag_numpyro()
+```
+
+where `drawsDF` is a representative sample of the posterior distribution associated with partial pooling model. This data frame is a sample of 4,000 draws of 28 variables. Let’s list the 28 variables using `names(drawsDF)`.
+
+```{r}
+names(drawsDF)
+```
+
+Perusing our posterior’s 28 random variables, we might notice that `theta` is not one of them. Bummer! We are going to need to do some coding to get a representative sample for `theta`.
+
+`theta` is omitted because it is a calculated node; its realization is a deterministic function of its parent `y` which is also a calculated node. Note that an oval’s double-perimeter is the visual clue for a calculated node. Its parents include both random and observed nodes. So to actually determine `theta`, we need follow the generative recipe from grandparents (`alpha`,`beta`,`j`, and `x`) to grandchild (`theta`) via linear predictor `y`.
+
+```{r}
+graph3 %>% dag_render()
+```
+
+Notice, we do not care about `mu_alpha` and the other parents of `alpha` and `beta`. Once we have a representative sample of `alpha` and `beta`, plus the observed nodes `j` and `x` , then we can calculate `theta`.
+
+For example, let’s estimate the additional sign-up probability when using “Yoga Stretch” at gym number 12?
+
+1.  Get a single draw of the required nodes from the representative sample:
+
+```{r}
+draw = drawsDF %>% 
+  slice_sample(n=1) %>% # get a random draw
+  select(alpha_12,beta_12)
+```
+
+1.  Compute a value for the linear predictor with and without yoga (i.e. `x=1` and `x=0`, respectively) using the formula shown for this node in the generative decision DAG. Plugging in for `x`, we get the two different values of linear preditor `y` that interest us: `x=1` $\rightarrow y_{yoga} = \alpha{12}+\beta{12}*1$) and without yoga (`x=0` $\rightarrow y_{trad} = \alpha{12}+\beta{12}*0 = \alpha_{12}$):
+
+```{r}
+draw = draw %>%
+  mutate(y_yoga = alpha_12 + beta_12 * 1) %>%
+  mutate(y_trad = alpha_12)
+```
+
+1.  Compute the values for `theta` with and without yoga at gym12 using the inverse-logit function (i.e. the link function formula shown for this node in the generative decision DAG):
+
+```{r}
+draw = draw %>%
+  mutate(theta_yoga = 1 / (1+exp(-y_yoga))) %>%
+  mutate(theta_trad = 1 / (1+exp(-y_trad)))
+```
+
+1.  Compute the increased probability of signup when using yoga at gym12:
+
+```{r}
+draw = draw %>%
+  mutate(probIncDueToYoga = 
+           theta_yoga - theta_trad)
+```
+
+And now, viewing these computed values:
+
+```{r}
+draw
+```
+
+we see that for this draw, around 21% of yoga trial customers end up signing up for a membership versus 15% of customers doing traditional stretching. According to this draw then, approximately 6% is the signup probability increase due to yoga stretching.
+
+Let’s get a little mathematical and declare this difference in probabilities to be a new random variable `Z_{gymID}` like:
+
+$$
+Z_{12} \equiv \textrm{ Probability increase due to yoga stretching at gym 12}
+$$
+
+The following code scales the above four steps for creating one draw to creating a column of representative samples for $Z_{12}$:
+
+```{r}
+postDF = drawsDF %>%
+  select(alpha_12,beta_12) %>%
+  mutate(y_yoga = alpha_12 + beta_12 * 1) %>%
+  mutate(y_trad = alpha_12) %>%
+  mutate(theta_yoga = 1 / (1+exp(-y_yoga))) %>%
+  mutate(theta_trad = 1 / (1+exp(-y_trad))) %>%
+  mutate(z_12 = theta_yoga - theta_trad)
+```
+
+The column we just made, `z_12`, is our posterior distribution for the change in probability due to yoga stretching. We can visualize and summarize this posterior density:
+
+```{r}
+gf_density(~ z_12, data = postDF)
+```
+
+```{r}
+summarise_draws(postDF) # or summarise(postDF$z_12)
+```
+
+and form only a mild opinion that yoga is probably helpful at gym 12 (i.e. most of the plausible values are above zero).

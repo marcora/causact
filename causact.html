@@ -197,6 +197,11 @@ window.Quarto = {
   <li><a href="#no-pooling" id="toc-no-pooling" class="nav-link" data-scroll-target="#no-pooling">No pooling</a></li>
   <li><a href="#partial-pooling" id="toc-partial-pooling" class="nav-link" data-scroll-target="#partial-pooling">Partial pooling</a></li>
   </ul></li>
+  <li><a href="#compelling-decisions-and-actions-under-uncertainty" id="toc-compelling-decisions-and-actions-under-uncertainty" class="nav-link" data-scroll-target="#compelling-decisions-and-actions-under-uncertainty">Compelling decisions and actions under uncertainty</a>
+  <ul class="collapse">
+  <li><a href="#outcomes-of-interest" id="toc-outcomes-of-interest" class="nav-link" data-scroll-target="#outcomes-of-interest">Outcomes of interest</a></li>
+  <li><a href="#computing-posterior-distributions-for-outcomes-of-interest" id="toc-computing-posterior-distributions-for-outcomes-of-interest" class="nav-link" data-scroll-target="#computing-posterior-distributions-for-outcomes-of-interest">Computing posterior distributions for outcomes of interest</a></li>
+  </ul></li>
   </ul>
 </nav>
 </div>
@@ -2405,11 +2410,11 @@ Note
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a>drawsDF <span class="ot">=</span> graph <span class="sc">|&gt;</span> <span class="fu">dag_numpyro</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>And then compare data simulated from a random posterior draw to the observed data. <em>Actually, we will compare simulated data from several draws, say 20, to get a fuller picture of what the posterior implies for observed data.</em> By creating multiple simulated datasets, we can see how much the data distributions vary. Observed data is subject to lots of randomness, so we just want to ensure that the observed randomness falls within the realm of our plausible narratives.</p>
-<p>Getting the twenty random draws, which is technically a random sample of the posterior representative sample, we place them in <code>params</code>:</p>
+<p>Getting the twenty random draws, which is technically a random sample of the posterior representative sample, we place them in <code>paramsDF</code>:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb93"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb93-1"><a href="#cb93-1" aria-hidden="true" tabindex="-1"></a>params <span class="ot">=</span> drawsDF <span class="sc">|&gt;</span> <span class="fu">slice_sample</span>(<span class="at">n=</span><span class="dv">20</span>)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb93"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb93-1"><a href="#cb93-1" aria-hidden="true" tabindex="-1"></a>paramsDF <span class="ot">=</span> drawsDF <span class="sc">|&gt;</span> <span class="fu">slice_sample</span>(<span class="at">n=</span><span class="dv">20</span>)</span>
 <span id="cb93-2"><a href="#cb93-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb93-3"><a href="#cb93-3" aria-hidden="true" tabindex="-1"></a>params</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb93-3"><a href="#cb93-3" aria-hidden="true" tabindex="-1"></a>paramsDF</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="kable-table">
 <table class="caption-top table table-sm table-striped small">
@@ -2526,7 +2531,7 @@ Note
 </div>
 </div>
 </div>
-<p>Then, for each row of <code>params</code>, we will simulate 31 observations. Since we are going to do the same simulation 20 times, once for each row of parameters, I write a function which returns a vector of simulated tree heights. Again, we convert the generative DAG recipe to code that enables our posterior predictive check:</p>
+<p>Then, for each row of <code>paramsDF</code>, we will simulate 31 observations. Since we are going to do the same simulation 20 times, once for each row of parameters, I write a function which returns a vector of simulated tree heights. Again, we convert the generative DAG recipe to code that enables our posterior predictive check:</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb94"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a>simData <span class="ot">=</span> <span class="cf">function</span>(nu,mu,sigma) {</span>
 <span id="cb94-2"><a href="#cb94-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># use n = 31 because 31 observed heights in the data</span></span>
@@ -2535,7 +2540,7 @@ Note
 </div>
 <p>N.B.: The Student-t distribution in <code>causact</code> is based on the <code>rlst()</code> function in the <code>extraDistr</code> package.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb95"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb95-1"><a href="#cb95-1" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> params <span class="sc">|&gt;</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb95"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb95-1"><a href="#cb95-1" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> paramsDF <span class="sc">|&gt;</span></span>
 <span id="cb95-2"><a href="#cb95-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">simID =</span> <span class="fu">row_number</span>()) <span class="sc">|&gt;</span></span>
 <span id="cb95-3"><a href="#cb95-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rowwise</span>() <span class="sc">|&gt;</span> </span>
 <span id="cb95-4"><a href="#cb95-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">simData =</span> <span class="fu">list</span>(<span class="fu">simData</span>(nu, mu, sigma))) <span class="sc">|&gt;</span> </span>
@@ -4254,9 +4259,9 @@ Note
 </div>
 <p>Perhaps, the fact that these probability estimates align with the emprical estimates (above) should seem comforting, but there is something sinister lurking in our model choice. Recall that our visual sensibilities have already noticed differences among the gyms. So, it should be expected that we are not accurately modeling the data generation process when ignoring these differences. By performing a posterior predictive check, we see how looking at this overly simple <em>complete pooling</em> model fails to capture some of the patterns observed in the actual data.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb140"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb140-1"><a href="#cb140-1" aria-hidden="true" tabindex="-1"></a>params <span class="ot">=</span> drawsDF <span class="sc">|&gt;</span> <span class="fu">slice_sample</span>(<span class="at">n=</span><span class="dv">20</span>)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb140"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb140-1"><a href="#cb140-1" aria-hidden="true" tabindex="-1"></a>paramsDF <span class="ot">=</span> drawsDF <span class="sc">|&gt;</span> <span class="fu">slice_sample</span>(<span class="at">n=</span><span class="dv">20</span>)</span>
 <span id="cb140-2"><a href="#cb140-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb140-3"><a href="#cb140-3" aria-hidden="true" tabindex="-1"></a>params</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb140-3"><a href="#cb140-3" aria-hidden="true" tabindex="-1"></a>paramsDF</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="kable-table">
 <table class="caption-top table table-sm table-striped small">
@@ -4365,7 +4370,7 @@ Note
 <span id="cb141-10"><a href="#cb141-10" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb142"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb142-1"><a href="#cb142-1" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> params <span class="sc">|&gt;</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb142"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb142-1"><a href="#cb142-1" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> paramsDF <span class="sc">|&gt;</span></span>
 <span id="cb142-2"><a href="#cb142-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">simID =</span> <span class="fu">row_number</span>()) <span class="sc">|&gt;</span></span>
 <span id="cb142-3"><a href="#cb142-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rowwise</span>() <span class="sc">|&gt;</span> </span>
 <span id="cb142-4"><a href="#cb142-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">simData =</span> <span class="fu">list</span>(<span class="fu">simData</span>(theta_0, theta_1, gymDF))) <span class="sc">|&gt;</span> </span>
@@ -4679,62 +4684,560 @@ Note
 </div>
 </div>
 </div>
-<p>xxx</p>
+<p>Recall that these are components of a linear predictor (i.e.&nbsp;<span class="math inline">\(\alpha + \beta x\)</span>). If the linear predictor is zero, that corresponds to a probability of 50%. Hence, values for <span class="math inline">\(\alpha &lt; 0\)</span> would imply base conversion rates less than 50%. Values for <span class="math inline">\(\beta\)</span> indicate whether that base probability should be adjusted up or down; <span class="math inline">\(\beta \lt 0\)</span> implies a negative effect for the yoga stretching routine and <span class="math inline">\(\beta \gt 0\)</span> indicates that the effect is positive.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb149"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb149-1"><a href="#cb149-1" aria-hidden="true" tabindex="-1"></a>plotDF <span class="ot">=</span> gymDF <span class="sc">%&gt;%</span></span>
+<span id="cb149-2"><a href="#cb149-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">stretchType =</span> </span>
+<span id="cb149-3"><a href="#cb149-3" aria-hidden="true" tabindex="-1"></a>           <span class="fu">ifelse</span>(yogaStretch <span class="sc">==</span> <span class="dv">1</span>, </span>
+<span id="cb149-4"><a href="#cb149-4" aria-hidden="true" tabindex="-1"></a>                  <span class="st">"Yoga Stretch"</span>, </span>
+<span id="cb149-5"><a href="#cb149-5" aria-hidden="true" tabindex="-1"></a>                  <span class="st">"Traditional"</span>))</span>
+<span id="cb149-6"><a href="#cb149-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb149-7"><a href="#cb149-7" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(plotDF, </span>
+<span id="cb149-8"><a href="#cb149-8" aria-hidden="true" tabindex="-1"></a>       <span class="fu">aes</span>(<span class="at">x =</span> timePeriod, <span class="co">#map time to x-axis</span></span>
+<span id="cb149-9"><a href="#cb149-9" aria-hidden="true" tabindex="-1"></a>           <span class="at">y =</span> nTrialCustomers, <span class="co">#map numTrials to y-axis</span></span>
+<span id="cb149-10"><a href="#cb149-10" aria-hidden="true" tabindex="-1"></a>           <span class="at">fill =</span> stretchType <span class="co">#map fill to stretch type</span></span>
+<span id="cb149-11"><a href="#cb149-11" aria-hidden="true" tabindex="-1"></a>                  )) <span class="sc">+</span> </span>
+<span id="cb149-12"><a href="#cb149-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">width =</span> <span class="fl">0.75</span>, </span>
+<span id="cb149-13"><a href="#cb149-13" aria-hidden="true" tabindex="-1"></a>           <span class="at">alpha =</span> <span class="fl">0.55</span>) <span class="sc">+</span>  <span class="co"># use transparency</span></span>
+<span id="cb149-14"><a href="#cb149-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">width =</span> <span class="fl">0.75</span>, </span>
+<span id="cb149-15"><a href="#cb149-15" aria-hidden="true" tabindex="-1"></a>           <span class="fu">aes</span>(<span class="at">y =</span> nSigned)) <span class="sc">+</span> <span class="co"># different y-mapping</span></span>
+<span id="cb149-16"><a href="#cb149-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="fu">vars</span>(gymID), <span class="at">labeller =</span> label_both) <span class="sc">+</span> </span>
+<span id="cb149-17"><a href="#cb149-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="dv">11</span>) <span class="sc">+</span> </span>
+<span id="cb149-18"><a href="#cb149-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.caption =</span> </span>
+<span id="cb149-19"><a href="#cb149-19" aria-hidden="true" tabindex="-1"></a>          <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">9</span>, <span class="at">face =</span> <span class="st">"italic"</span>),</span>
+<span id="cb149-20"><a href="#cb149-20" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.position =</span> <span class="st">"bottom"</span>) <span class="sc">+</span></span>
+<span id="cb149-21"><a href="#cb149-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"# of Trial Customers"</span>) <span class="sc">+</span></span>
+<span id="cb149-22"><a href="#cb149-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">caption =</span> </span>
+<span id="cb149-23"><a href="#cb149-23" aria-hidden="true" tabindex="-1"></a>         <span class="st">"Darker fill for # of sign-ups."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-131-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Comparing the estimates above with the gym data from the top (copied above for convenience), notice how the posterior estimates correspond with your expectations. The <span class="math inline">\(\alpha\)</span> values with the smallest credible intervals are for gyms that have the largest number of trial customers participating in trials with traditional stretching (i.e.&nbsp;gyms 2, 5, and 8). Similarly, the <span class="math inline">\(\beta\)</span> values with the smallest credible intervals are for gyms that have the largest number of trial customers participating in Yoga stretching classes (i.e.&nbsp;gyms 1 and 4). The opposite is also observable. Gyms lacking data for traditional stretching have wide credible intervals for <span class="math inline">\(\alpha\)</span> (e.g.&nbsp;gym 10) and gyms lacking data for yoga stretching do not improve on the prior uncertainty in <span class="math inline">\(\beta\)</span> (e.g.&nbsp;gyms 11 and 12).</p>
+<p>This no pooling model is not terrible in the sense that each gym gets statistically modeled. Let’s do some challenging data manipulation and do a posterior predictive check:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb150"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb150-1"><a href="#cb150-1" aria-hidden="true" tabindex="-1"></a><span class="do">## get DF of observed data and remove target measure</span></span>
+<span id="cb150-2"><a href="#cb150-2" aria-hidden="true" tabindex="-1"></a>simDF <span class="ot">=</span> gymDF <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>nSigned)</span>
+<span id="cb150-3"><a href="#cb150-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb150-4"><a href="#cb150-4" aria-hidden="true" tabindex="-1"></a><span class="do">## get 20 random draws of posterior</span></span>
+<span id="cb150-5"><a href="#cb150-5" aria-hidden="true" tabindex="-1"></a>paramsDF <span class="ot">=</span> drawsDF <span class="sc">%&gt;%</span></span>
+<span id="cb150-6"><a href="#cb150-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_sample</span>(<span class="at">n=</span><span class="dv">20</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb150-7"><a href="#cb150-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">sampDrawID =</span> <span class="fu">row_number</span>()) </span>
+<span id="cb150-8"><a href="#cb150-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb150-9"><a href="#cb150-9" aria-hidden="true" tabindex="-1"></a><span class="do">## when data like gym_id is in the name of column </span></span>
+<span id="cb150-10"><a href="#cb150-10" aria-hidden="true" tabindex="-1"></a><span class="do">## headings, e.g. alpha_4,</span></span>
+<span id="cb150-11"><a href="#cb150-11" aria-hidden="true" tabindex="-1"></a><span class="do">## we use the tidyr package pivot_longer function </span></span>
+<span id="cb150-12"><a href="#cb150-12" aria-hidden="true" tabindex="-1"></a><span class="do">## to turn headings into data</span></span>
+<span id="cb150-13"><a href="#cb150-13" aria-hidden="true" tabindex="-1"></a><span class="do">## and extract the gymID information from the heading</span></span>
+<span id="cb150-14"><a href="#cb150-14" aria-hidden="true" tabindex="-1"></a>tidyParamDF <span class="ot">=</span> paramsDF <span class="sc">%&gt;%</span> </span>
+<span id="cb150-15"><a href="#cb150-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="sc">-</span>sampDrawID) <span class="sc">%&gt;%</span></span>
+<span id="cb150-16"><a href="#cb150-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">gymID =</span> <span class="fu">str_extract</span>(name, <span class="st">'[0-9]+'</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb150-17"><a href="#cb150-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">gymID =</span> <span class="fu">as.integer</span>(gymID)) <span class="sc">%&gt;%</span></span>
+<span id="cb150-18"><a href="#cb150-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">paramName =</span> <span class="fu">str_extract</span>(name, <span class="st">'[:alpha:]+'</span>))</span>
+<span id="cb150-19"><a href="#cb150-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb150-20"><a href="#cb150-20" aria-hidden="true" tabindex="-1"></a><span class="do">## now we get explanatory variable info </span></span>
+<span id="cb150-21"><a href="#cb150-21" aria-hidden="true" tabindex="-1"></a><span class="do">## combined with relevant params</span></span>
+<span id="cb150-22"><a href="#cb150-22" aria-hidden="true" tabindex="-1"></a>simDF <span class="ot">=</span> simDF <span class="sc">%&gt;%</span> <span class="fu">left_join</span>(tidyParamDF, <span class="at">by =</span> <span class="st">"gymID"</span>) </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in left_join(., tidyParamDF, by = "gymID"): Detected an unexpected many-to-many relationship between `x` and `y`.
+ℹ Row 1 of `x` matches multiple rows in `y`.
+ℹ Row 1 of `y` matches multiple rows in `x`.
+ℹ If a many-to-many relationship is expected, set `relationship =
+  "many-to-many"` to silence this warning.</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb152"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb152-1"><a href="#cb152-1" aria-hidden="true" tabindex="-1"></a><span class="do">## 44 observations * 2 params per row * 20 sims </span></span>
+<span id="cb152-2"><a href="#cb152-2" aria-hidden="true" tabindex="-1"></a><span class="do">## = 1,760 rows</span></span>
+<span id="cb152-3"><a href="#cb152-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb152-4"><a href="#cb152-4" aria-hidden="true" tabindex="-1"></a><span class="do">## get relevant alpha and beta on same row</span></span>
+<span id="cb152-5"><a href="#cb152-5" aria-hidden="true" tabindex="-1"></a>simPredDF <span class="ot">=</span> simDF <span class="sc">%&gt;%</span></span>
+<span id="cb152-6"><a href="#cb152-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">id_cols =</span> gymID<span class="sc">:</span>sampDrawID,</span>
+<span id="cb152-7"><a href="#cb152-7" aria-hidden="true" tabindex="-1"></a>              <span class="at">names_from =</span> paramName,</span>
+<span id="cb152-8"><a href="#cb152-8" aria-hidden="true" tabindex="-1"></a>              <span class="at">values_from =</span> value)</span>
+<span id="cb152-9"><a href="#cb152-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb152-10"><a href="#cb152-10" aria-hidden="true" tabindex="-1"></a><span class="do">## if no yoga, then y=alpha.  If yoga, then y=alpha+beta</span></span>
+<span id="cb152-11"><a href="#cb152-11" aria-hidden="true" tabindex="-1"></a>simPredDF <span class="ot">=</span> simPredDF <span class="sc">%&gt;%</span></span>
+<span id="cb152-12"><a href="#cb152-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">y =</span> <span class="fu">ifelse</span>(yogaStretch <span class="sc">==</span> <span class="dv">0</span>, </span>
+<span id="cb152-13"><a href="#cb152-13" aria-hidden="true" tabindex="-1"></a>                    alpha, alpha<span class="sc">+</span>beta)) <span class="sc">%&gt;%</span></span>
+<span id="cb152-14"><a href="#cb152-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">theta =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(<span class="sc">-</span>y))) <span class="sc">%&gt;%</span></span>
+<span id="cb152-15"><a href="#cb152-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">nSigned =</span> <span class="fu">rbinom</span>(<span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb152-16"><a href="#cb152-16" aria-hidden="true" tabindex="-1"></a>                          <span class="at">size =</span> nTrialCustomers,</span>
+<span id="cb152-17"><a href="#cb152-17" aria-hidden="true" tabindex="-1"></a>                          <span class="at">prob =</span> theta))</span>
+<span id="cb152-18"><a href="#cb152-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb152-19"><a href="#cb152-19" aria-hidden="true" tabindex="-1"></a>obsDF <span class="ot">=</span> <span class="fu">tibble</span>(<span class="at">obs =</span> gymDF<span class="sc">$</span>nSigned)</span>
+<span id="cb152-20"><a href="#cb152-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb152-21"><a href="#cb152-21" aria-hidden="true" tabindex="-1"></a>colors <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"simulated"</span> <span class="ot">=</span> <span class="st">"cadetblue"</span>, </span>
+<span id="cb152-22"><a href="#cb152-22" aria-hidden="true" tabindex="-1"></a>           <span class="st">"observed"</span> <span class="ot">=</span> <span class="st">"navyblue"</span>)</span>
+<span id="cb152-23"><a href="#cb152-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb152-24"><a href="#cb152-24" aria-hidden="true" tabindex="-1"></a><span class="do">## make plot</span></span>
+<span id="cb152-25"><a href="#cb152-25" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(simPredDF) <span class="sc">+</span></span>
+<span id="cb152-26"><a href="#cb152-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stat_density</span>(<span class="fu">aes</span>(<span class="at">x=</span>nSigned, </span>
+<span id="cb152-27"><a href="#cb152-27" aria-hidden="true" tabindex="-1"></a>                   <span class="at">group =</span> sampDrawID,</span>
+<span id="cb152-28"><a href="#cb152-28" aria-hidden="true" tabindex="-1"></a>                   <span class="at">color =</span> <span class="st">"simulated"</span>),</span>
+<span id="cb152-29"><a href="#cb152-29" aria-hidden="true" tabindex="-1"></a>               <span class="at">geom =</span> <span class="st">"line"</span>,</span>
+<span id="cb152-30"><a href="#cb152-30" aria-hidden="true" tabindex="-1"></a>               <span class="at">position =</span> <span class="st">"identity"</span>) <span class="sc">+</span></span>
+<span id="cb152-31"><a href="#cb152-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stat_density</span>(<span class="at">data =</span> obsDF, <span class="fu">aes</span>(<span class="at">x=</span>obs, </span>
+<span id="cb152-32"><a href="#cb152-32" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">color =</span> <span class="st">"observed"</span>),</span>
+<span id="cb152-33"><a href="#cb152-33" aria-hidden="true" tabindex="-1"></a>               <span class="at">geom =</span> <span class="st">"line"</span>,  </span>
+<span id="cb152-34"><a href="#cb152-34" aria-hidden="true" tabindex="-1"></a>               <span class="at">position =</span> <span class="st">"identity"</span>,</span>
+<span id="cb152-35"><a href="#cb152-35" aria-hidden="true" tabindex="-1"></a>               <span class="at">lwd =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb152-36"><a href="#cb152-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> colors) <span class="sc">+</span></span>
+<span id="cb152-37"><a href="#cb152-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"# of Monthly Signups"</span>,</span>
+<span id="cb152-38"><a href="#cb152-38" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Density Estimated from Data"</span>,</span>
+<span id="cb152-39"><a href="#cb152-39" aria-hidden="true" tabindex="-1"></a>       <span class="at">color =</span> <span class="st">"Data Type"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-132-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This posterior predictive check looks really good. Yet, the estimates above revealed there are credible intervals which can be made smaller; uncertainty bands can be narrowed for gym’s missing one type of class. We know, from previous observation at all the gyms, that yoga’s effect seems small. Hence, the wide uncertainty bands are not warranted. Going the other way, we should have more confidence in gym 10’s recruitment rate (). Gym 10 is a star performer and I do not think dropping the yoga-stretch will lead to enormous drops in rate. Overall, I think we should agree that learning about one gym might tell us something about another gym. In fact, I would argue that learning about 12 gym’s should tell us what we might expect when the next 100 gyms are opened. The next model explores this and shows us we can do better.</p>
 </section>
 </section>
 <section id="partial-pooling" class="level3">
 <h3 class="anchored" data-anchor-id="partial-pooling">Partial pooling</h3>
+<p>The partial pooling model imagines that the Crossfit Gyms business model produces gyms with similar characteristics. Some gyms will do better than average and some gyms will do worse, but there is some relationship between each gym’s performance. In this case, learning about one gym’s success in recruiting provides information about that gym as well as the entire population of Crossfit gyms.</p>
+<p>To accomodate this structure (i.e.&nbsp;known as hierarchical or multi-level structure), we add parent nodes to the gym-level coefficients in the previous generative DAG (stored in <code>graph2</code>) and change the statistical model for those gym-level coefficients as well. The partial pooling model generative DAG (<code>graph3</code>) can be specified as:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb149"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb149-1"><a href="#cb149-1" aria-hidden="true" tabindex="-1"></a>graph3 <span class="ot">=</span> <span class="fu">dag_create</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb149-2"><a href="#cb149-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Number of Signups"</span>,<span class="st">"k"</span>,</span>
-<span id="cb149-3"><a href="#cb149-3" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">binomial</span>(nTrials,theta),</span>
-<span id="cb149-4"><a href="#cb149-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>nSigned) <span class="sc">%&gt;%</span></span>
-<span id="cb149-5"><a href="#cb149-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Signup Probability"</span>,<span class="st">"theta"</span>,</span>
-<span id="cb149-6"><a href="#cb149-6" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"k"</span>,</span>
-<span id="cb149-7"><a href="#cb149-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span><span class="sc">+</span><span class="fu">exp</span>(<span class="sc">-</span>y))) <span class="sc">%&gt;%</span></span>
-<span id="cb149-8"><a href="#cb149-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Number of Trials"</span>,<span class="st">"nTrials"</span>,</span>
-<span id="cb149-9"><a href="#cb149-9" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"k"</span>,</span>
-<span id="cb149-10"><a href="#cb149-10" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>nTrialCustomers) <span class="sc">%&gt;%</span></span>
-<span id="cb149-11"><a href="#cb149-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Linear Predictor"</span>,<span class="st">"y"</span>,</span>
-<span id="cb149-12"><a href="#cb149-12" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> alpha <span class="sc">+</span> beta <span class="sc">*</span> x,</span>
-<span id="cb149-13"><a href="#cb149-13" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"theta"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb149-14"><a href="#cb149-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Yoga Stretch Flag"</span>,<span class="st">"x"</span>,</span>
-<span id="cb149-15"><a href="#cb149-15" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>yogaStretch,</span>
-<span id="cb149-16"><a href="#cb149-16" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"y"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb149-17"><a href="#cb149-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Gym Intercept"</span>,<span class="st">"alpha"</span>,</span>
-<span id="cb149-18"><a href="#cb149-18" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">normal</span>(mu_alpha,sd_alpha),</span>
-<span id="cb149-19"><a href="#cb149-19" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"y"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb149-20"><a href="#cb149-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Gym Yoga Slope Coeff"</span>,<span class="st">"beta"</span>,</span>
-<span id="cb149-21"><a href="#cb149-21" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">normal</span>(mu_beta,sd_beta),</span>
-<span id="cb149-22"><a href="#cb149-22" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"y"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb149-23"><a href="#cb149-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Avg Crossfit Intercept"</span>,<span class="st">"mu_alpha"</span>,</span>
-<span id="cb149-24"><a href="#cb149-24" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">normal</span>(<span class="sc">-</span><span class="dv">1</span>,<span class="fl">1.5</span>),</span>
-<span id="cb149-25"><a href="#cb149-25" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"alpha"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb149-26"><a href="#cb149-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Avg Crossfit Yoga Slope"</span>,<span class="st">"mu_beta"</span>,</span>
-<span id="cb149-27"><a href="#cb149-27" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">normal</span>(<span class="dv">0</span>,<span class="fl">0.75</span>),</span>
-<span id="cb149-28"><a href="#cb149-28" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"beta"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb149-29"><a href="#cb149-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"SD Crossfit Intercept"</span>,<span class="st">"sd_alpha"</span>,</span>
-<span id="cb149-30"><a href="#cb149-30" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">uniform</span>(<span class="dv">0</span>,<span class="dv">3</span>),</span>
-<span id="cb149-31"><a href="#cb149-31" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"alpha"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb149-32"><a href="#cb149-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"SD Crossfit Yoga Slope"</span>,<span class="st">"sd_beta"</span>,</span>
-<span id="cb149-33"><a href="#cb149-33" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">uniform</span>(<span class="dv">0</span>,<span class="fl">1.5</span>),</span>
-<span id="cb149-34"><a href="#cb149-34" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"beta"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb149-35"><a href="#cb149-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_plate</span>(<span class="st">"Gym"</span>,<span class="st">"j"</span>,</span>
-<span id="cb149-36"><a href="#cb149-36" aria-hidden="true" tabindex="-1"></a>            <span class="at">nodeLabels =</span> <span class="fu">c</span>(<span class="st">"alpha"</span>,<span class="st">"beta"</span>),</span>
-<span id="cb149-37"><a href="#cb149-37" aria-hidden="true" tabindex="-1"></a>            <span class="at">data =</span> gymDF<span class="sc">$</span>gymID,</span>
-<span id="cb149-38"><a href="#cb149-38" aria-hidden="true" tabindex="-1"></a>            <span class="at">addDataNode =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb149-39"><a href="#cb149-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_plate</span>(<span class="st">"Observation"</span>,<span class="st">"i"</span>,</span>
-<span id="cb149-40"><a href="#cb149-40" aria-hidden="true" tabindex="-1"></a>            <span class="at">nodeLabels =</span> <span class="fu">c</span>(<span class="st">"k"</span>,<span class="st">"x"</span>,<span class="st">"j"</span>,</span>
-<span id="cb149-41"><a href="#cb149-41" aria-hidden="true" tabindex="-1"></a>                           <span class="st">"nTrials"</span>,<span class="st">"theta"</span>,<span class="st">"y"</span>))</span>
-<span id="cb149-42"><a href="#cb149-42" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb149-43"><a href="#cb149-43" aria-hidden="true" tabindex="-1"></a>graph3 <span class="sc">%&gt;%</span> <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb153"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb153-1"><a href="#cb153-1" aria-hidden="true" tabindex="-1"></a>graph3 <span class="ot">=</span> <span class="fu">dag_create</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb153-2"><a href="#cb153-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Number of Signups"</span>,<span class="st">"k"</span>,</span>
+<span id="cb153-3"><a href="#cb153-3" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">binomial</span>(nTrials,theta),</span>
+<span id="cb153-4"><a href="#cb153-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>nSigned) <span class="sc">%&gt;%</span></span>
+<span id="cb153-5"><a href="#cb153-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Signup Probability"</span>,<span class="st">"theta"</span>,</span>
+<span id="cb153-6"><a href="#cb153-6" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"k"</span>,</span>
+<span id="cb153-7"><a href="#cb153-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span><span class="sc">+</span><span class="fu">exp</span>(<span class="sc">-</span>y))) <span class="sc">%&gt;%</span></span>
+<span id="cb153-8"><a href="#cb153-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Number of Trials"</span>,<span class="st">"nTrials"</span>,</span>
+<span id="cb153-9"><a href="#cb153-9" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"k"</span>,</span>
+<span id="cb153-10"><a href="#cb153-10" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>nTrialCustomers) <span class="sc">%&gt;%</span></span>
+<span id="cb153-11"><a href="#cb153-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Linear Predictor"</span>,<span class="st">"y"</span>,</span>
+<span id="cb153-12"><a href="#cb153-12" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> alpha <span class="sc">+</span> beta <span class="sc">*</span> x,</span>
+<span id="cb153-13"><a href="#cb153-13" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"theta"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb153-14"><a href="#cb153-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Yoga Stretch Flag"</span>,<span class="st">"x"</span>,</span>
+<span id="cb153-15"><a href="#cb153-15" aria-hidden="true" tabindex="-1"></a>           <span class="at">data =</span> gymDF<span class="sc">$</span>yogaStretch,</span>
+<span id="cb153-16"><a href="#cb153-16" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"y"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb153-17"><a href="#cb153-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Gym Intercept"</span>,<span class="st">"alpha"</span>,</span>
+<span id="cb153-18"><a href="#cb153-18" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">normal</span>(mu_alpha,sd_alpha),</span>
+<span id="cb153-19"><a href="#cb153-19" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"y"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb153-20"><a href="#cb153-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Gym Yoga Slope Coeff"</span>,<span class="st">"beta"</span>,</span>
+<span id="cb153-21"><a href="#cb153-21" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">normal</span>(mu_beta,sd_beta),</span>
+<span id="cb153-22"><a href="#cb153-22" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"y"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb153-23"><a href="#cb153-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Avg Crossfit Intercept"</span>,<span class="st">"mu_alpha"</span>,</span>
+<span id="cb153-24"><a href="#cb153-24" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">normal</span>(<span class="sc">-</span><span class="dv">1</span>,<span class="fl">1.5</span>),</span>
+<span id="cb153-25"><a href="#cb153-25" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"alpha"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb153-26"><a href="#cb153-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Avg Crossfit Yoga Slope"</span>,<span class="st">"mu_beta"</span>,</span>
+<span id="cb153-27"><a href="#cb153-27" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">normal</span>(<span class="dv">0</span>,<span class="fl">0.75</span>),</span>
+<span id="cb153-28"><a href="#cb153-28" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"beta"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb153-29"><a href="#cb153-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"SD Crossfit Intercept"</span>,<span class="st">"sd_alpha"</span>,</span>
+<span id="cb153-30"><a href="#cb153-30" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">uniform</span>(<span class="dv">0</span>,<span class="dv">3</span>),</span>
+<span id="cb153-31"><a href="#cb153-31" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"alpha"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb153-32"><a href="#cb153-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"SD Crossfit Yoga Slope"</span>,<span class="st">"sd_beta"</span>,</span>
+<span id="cb153-33"><a href="#cb153-33" aria-hidden="true" tabindex="-1"></a>           <span class="at">rhs =</span> <span class="fu">uniform</span>(<span class="dv">0</span>,<span class="fl">1.5</span>),</span>
+<span id="cb153-34"><a href="#cb153-34" aria-hidden="true" tabindex="-1"></a>           <span class="at">child =</span> <span class="st">"beta"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb153-35"><a href="#cb153-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_plate</span>(<span class="st">"Gym"</span>,<span class="st">"j"</span>,</span>
+<span id="cb153-36"><a href="#cb153-36" aria-hidden="true" tabindex="-1"></a>            <span class="at">nodeLabels =</span> <span class="fu">c</span>(<span class="st">"alpha"</span>,<span class="st">"beta"</span>),</span>
+<span id="cb153-37"><a href="#cb153-37" aria-hidden="true" tabindex="-1"></a>            <span class="at">data =</span> gymDF<span class="sc">$</span>gymID,</span>
+<span id="cb153-38"><a href="#cb153-38" aria-hidden="true" tabindex="-1"></a>            <span class="at">addDataNode =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb153-39"><a href="#cb153-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_plate</span>(<span class="st">"Observation"</span>,<span class="st">"i"</span>,</span>
+<span id="cb153-40"><a href="#cb153-40" aria-hidden="true" tabindex="-1"></a>            <span class="at">nodeLabels =</span> <span class="fu">c</span>(<span class="st">"k"</span>,<span class="st">"x"</span>,<span class="st">"j"</span>,</span>
+<span id="cb153-41"><a href="#cb153-41" aria-hidden="true" tabindex="-1"></a>                           <span class="st">"nTrials"</span>,<span class="st">"theta"</span>,<span class="st">"y"</span>))</span>
+<span id="cb153-42"><a href="#cb153-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb153-43"><a href="#cb153-43" aria-hidden="true" tabindex="-1"></a>graph3 <span class="sc">%&gt;%</span> <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="grViz html-widget html-fill-item" id="htmlwidget-9e5c90bfa43893a2d8ed" style="width:100%;height:464px;"></div>
 <script type="application/json" data-for="htmlwidget-9e5c90bfa43893a2d8ed">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\n  \"8\" [label = \"Avg Crossfit Intercept\nmu_alpha ~ normal(-1,1.5)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"9\" [label = \"Avg Crossfit Yoga Slope\nmu_beta ~ normal(0,0.75)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"10\" [label = \"SD Crossfit Intercept\nsd_alpha ~ uniform(0,3)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"11\" [label = \"SD Crossfit Yoga Slope\nsd_beta ~ uniform(0,1.5)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \nsubgraph cluster2{\nlabel=\"Gym j [12]\"\n  \"6\" [label = \"Gym Intercept\nalpha ~ normal(mu_alpha,sd_alpha)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"7\" [label = \"Gym Yoga Slope Coeff\nbeta ~ normal(mu_beta,sd_beta)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] }\n\nsubgraph cluster3{\nlabel=\"Observation i [44]\"\n  \"1\" [label = \"Number of Signups\nk ~ binomial(nTrials,theta)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"2\" [label = \"Signup Probability\ntheta = 1 / (1 + exp(-y))\", shape = \"ellipse\", peripheries = \"2\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"3\" [label = \"Number of Trials\nnTrials\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"4\" [label = \"Linear Predictor\ny = alpha[j] + beta[j] * x\", shape = \"ellipse\", peripheries = \"2\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"5\" [label = \"Yoga Stretch Flag\nx\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"12\" [label = \"Gym\nj\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] }\n\n\"6\"->\"4\" [style = \"dashed\"] \n\"7\"->\"4\" [style = \"dashed\"] \n\"2\"->\"1\" [style = \"solid\"] \n\"3\"->\"1\" [style = \"solid\"] \n\"4\"->\"2\" [style = \"solid\"] \n\"5\"->\"4\" [style = \"solid\"] \n\"8\"->\"6\" [style = \"solid\"] \n\"9\"->\"7\" [style = \"solid\"] \n\"10\"->\"6\" [style = \"solid\"] \n\"11\"->\"7\" [style = \"solid\"] \n\"12\"->\"4\" [style = \"solid\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
-<p><br>
-</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Model with partially pooled observations</strong> - all gyms share common parent nodes. The data informs both the parameters of the parent nodes as well as the parameters of their children, i.e.&nbsp;the gym-level coefficients. Think of gyms as children of the Crossfit chain - each child is different, but probably shares some underlying characterstics.</p>
+</div>
+</div>
+<p>Take note of the top row of random variables in the generative DAG above, which characterize the population of gyms. Think of the first two nodes as characterizing the base conversion rate for the population of crossfit gyms - one represents an expectation of any single gym’s intercept and the other represents how much deviation should be expected between the intercept’s of all the gyms. For example, a high <code>mu_alpha</code> and a small <code>sd_alpha</code> would suggest any randomly chosen Crossfit gym will have a high base-level probability for membership sign-ups and additionally, no matter which gym is chosen, its likely to have a similarly high base-level probability.</p>
+<p>For priors, we used our previous prior for gym-level intercept to now be the prior for its parent, <code>mu_alpha</code> which is the expected base intercept for any Crossfit gym. The standard deviation component, <code>sd_alpha</code>, uses a uniform distribution that is twice the standard deviation prior for <code>mu_alpha</code>; chosen so the variation in base conversion rates will be on a similar scale to our own uncertainty in the corresponding mean, i.e.&nbsp;<code>mu_alpha</code>.</p>
+<p>The next two nodes atop the generative DAG suggest that every gym’s slope coefficient for yoga is drawn from a distribution characterized by an average effect of yoga stretching for any Crossfit gym, <code>mu_beta</code>, and a standard deviation, <code>sd_beta</code> measuring how likely any individual gym’s effect might deviate from the average. Priors are chosen as was done for the first two nodes.</p>
+<p>Through these population parameters, each gym’s <span class="math inline">\(\alpha_j\)</span> and <span class="math inline">\(\beta_j\)</span> are related; in cases of minimal gym data, the population parameters will be very important in estimating gym performance, conversely, in cases a gym shows strong deviation from the population parameters over a lot of trial customers, then these population parameters will get ignored.</p>
+<p>With generative DAG in place, we can compute and visualize the posterior in the standard way:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb154"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb154-1"><a href="#cb154-1" aria-hidden="true" tabindex="-1"></a>drawsDF <span class="ot">=</span> graph3 <span class="sc">%&gt;%</span> <span class="fu">dag_numpyro</span>()</span>
+<span id="cb154-2"><a href="#cb154-2" aria-hidden="true" tabindex="-1"></a>drawsDF <span class="sc">%&gt;%</span> <span class="fu">dagp_plot</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-134-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The figure below shows a slightly different snapshot of the posterior distribution. In addition to the partial pooling posterior, the previous <em>no-pooling</em> posterior is also put on the graph for comparison. This will help us see what gains are made (or not) by adding the four hyperparameters (i.e.&nbsp;<code>mu_alpha</code>,<code>mu_beta</code>,<code>sd_alpha</code>,<code>sd_beta</code>).</p>
+<p><img src="images/clipboard-4243588728.png" class="img-fluid"></p>
+<p>Visually comparing the estimates of the two models helps us learn how to think about the multi-level model’s (i.e.&nbsp;partial pooling) interpretation:</p>
+<ul>
+<li><p>Uncertainty interval widths have shrunk; especially for gym/stretching combinations that have yet to be seen. For example, gym10 has only two observations, both yoga, no traditional stretching observations. Now look at the change in , the base conversion rate parameter without yoga. Its a narrower interval than with no pooling. The narrowness is because we have learned about the effects of yoga from the other gyms and hence, can reason better about this unobserved base rate. This base rate remains high because we have also learned that differences due to yoga are never that dramatic.</p></li>
+<li><p>There is increased confidence that yoga stretching would be effective at each gym. Look at the rightward shift of most of the partial pooling <code>beta</code> estimates. Also, <code>mu_beta</code>, the average effect of yoga is clearly greater than zero; hence, it seems like a good idea for Crossfit to promote yoga.</p></li>
+<li><p>Not all gym’s are equal. Looking at gym 9 where there are 3 time periods of observations - one with traditional stretching that seemed better than the others. From the partial-pooling posterior, you see a rightward shift of <code>beta_9</code> as compared to the no-pooling model because we’ve learned that yoga works at other gyms. The uncertainty interval is clearly both positive and negative indicating we need more data to confidently dismiss or accept the idea of yoga.</p></li>
+<li><p>Both <code>alpha</code> and <code>beta</code> intervals in the partial pooling model often (but not always) get pulled towards their means, <code>mu_alpha</code> and <code>mu_beta</code> respectively. Because we are sharing information through these parents, their impact gets felt at the gym level - especially in cases of gym’s without much data. For example, gym 12 only has one time period of observation, so both <code>alpha_12</code> and <code>beta_12</code> intervals are pushed towards the expected values of their parent nodes. Gym 5 has alot of data and as a result does not respond to these parental node influences.</p></li>
+<li><p>The interval for <code>sd_alpha</code> being away from zero suggests that there is alot of deviation between gyms in terms of average expected base conversion rate. Recruitment rate is quite gym-specific. We can also see this in the original data as gym 10 seems exceptional and gym 2 needs new management.</p></li>
+</ul>
+<p>Overall, the partial pooling model is mildly helpful in reducing our uncertainty. Perhaps the best conclusion enabled by partial pooiling is that <code>mu_beta</code> being greater than zero; yoga is helpful, a point that was not crystal clear when just looking at the gym data. More importantly, this partial-pooling model tells a story of related gyms where insights at one gym help inform our opinion about other gyms.</p>
+<section id="posterior-predictive-checks-2" class="level4">
+<h4 class="anchored" data-anchor-id="posterior-predictive-checks-2">Posterior predictive checks</h4>
+<p>While these more confident and revealing estimates seem like a good thing, a posterior predictive check is in order to ensure that our model is still capable of producing data that might occassionally look like the actual data that we saw. Below is code for the posterior predictive check - its identical to the no-pooling model as we do NOT need to worry about the hyperparameters. As long as we have the parent-nodes of the linear-predictor, we do not need to worry about how they were generated by the grand-parent nodes.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb155"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb155-1"><a href="#cb155-1" aria-hidden="true" tabindex="-1"></a>simDF <span class="ot">=</span> gymDF <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>nSigned)</span>
+<span id="cb155-2"><a href="#cb155-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb155-3"><a href="#cb155-3" aria-hidden="true" tabindex="-1"></a><span class="do">## get 20 random draws of posterior</span></span>
+<span id="cb155-4"><a href="#cb155-4" aria-hidden="true" tabindex="-1"></a>paramsDF <span class="ot">=</span> drawsDF <span class="sc">%&gt;%</span></span>
+<span id="cb155-5"><a href="#cb155-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_sample</span>(<span class="at">n=</span><span class="dv">20</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb155-6"><a href="#cb155-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">sampDrawID =</span> <span class="fu">row_number</span>())</span>
+<span id="cb155-7"><a href="#cb155-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb155-8"><a href="#cb155-8" aria-hidden="true" tabindex="-1"></a>tidyParamDF <span class="ot">=</span> paramsDF <span class="sc">%&gt;%</span> </span>
+<span id="cb155-9"><a href="#cb155-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="sc">-</span>sampDrawID) <span class="sc">%&gt;%</span></span>
+<span id="cb155-10"><a href="#cb155-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">gymID =</span> <span class="fu">str_extract</span>(name, <span class="st">'[0-9]+'</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb155-11"><a href="#cb155-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">gymID =</span> <span class="fu">as.integer</span>(gymID)) <span class="sc">%&gt;%</span></span>
+<span id="cb155-12"><a href="#cb155-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">paramName =</span> <span class="fu">str_extract</span>(name, <span class="st">'[:alpha:]+'</span>))</span>
+<span id="cb155-13"><a href="#cb155-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb155-14"><a href="#cb155-14" aria-hidden="true" tabindex="-1"></a><span class="do">## combine needed info</span></span>
+<span id="cb155-15"><a href="#cb155-15" aria-hidden="true" tabindex="-1"></a>simDF <span class="ot">=</span> simDF <span class="sc">%&gt;%</span> <span class="fu">left_join</span>(tidyParamDF, <span class="at">by =</span> <span class="st">"gymID"</span>) </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in left_join(., tidyParamDF, by = "gymID"): Detected an unexpected many-to-many relationship between `x` and `y`.
+ℹ Row 1 of `x` matches multiple rows in `y`.
+ℹ Row 1 of `y` matches multiple rows in `x`.
+ℹ If a many-to-many relationship is expected, set `relationship =
+  "many-to-many"` to silence this warning.</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb157"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb157-1"><a href="#cb157-1" aria-hidden="true" tabindex="-1"></a><span class="do">## get relevant alpha and beta on same row</span></span>
+<span id="cb157-2"><a href="#cb157-2" aria-hidden="true" tabindex="-1"></a>simPredDF <span class="ot">=</span> simDF <span class="sc">%&gt;%</span></span>
+<span id="cb157-3"><a href="#cb157-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">id_cols =</span> gymID<span class="sc">:</span>sampDrawID,</span>
+<span id="cb157-4"><a href="#cb157-4" aria-hidden="true" tabindex="-1"></a>              <span class="at">names_from =</span> paramName,</span>
+<span id="cb157-5"><a href="#cb157-5" aria-hidden="true" tabindex="-1"></a>              <span class="at">values_from =</span> value)</span>
+<span id="cb157-6"><a href="#cb157-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb157-7"><a href="#cb157-7" aria-hidden="true" tabindex="-1"></a><span class="do">## if no yoga, then y=alpha. If yoga,then y=alpha+beta</span></span>
+<span id="cb157-8"><a href="#cb157-8" aria-hidden="true" tabindex="-1"></a>simPredDF <span class="ot">=</span> simPredDF <span class="sc">%&gt;%</span></span>
+<span id="cb157-9"><a href="#cb157-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">y =</span> <span class="fu">ifelse</span>(yogaStretch <span class="sc">==</span> <span class="dv">0</span>, </span>
+<span id="cb157-10"><a href="#cb157-10" aria-hidden="true" tabindex="-1"></a>                    alpha, alpha<span class="sc">+</span>beta)) <span class="sc">%&gt;%</span></span>
+<span id="cb157-11"><a href="#cb157-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">theta =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(<span class="sc">-</span>y))) <span class="sc">%&gt;%</span></span>
+<span id="cb157-12"><a href="#cb157-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">nSigned =</span> <span class="fu">rbinom</span>(<span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb157-13"><a href="#cb157-13" aria-hidden="true" tabindex="-1"></a>                          <span class="at">size =</span> nTrialCustomers,</span>
+<span id="cb157-14"><a href="#cb157-14" aria-hidden="true" tabindex="-1"></a>                          <span class="at">prob =</span> theta))</span>
+<span id="cb157-15"><a href="#cb157-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb157-16"><a href="#cb157-16" aria-hidden="true" tabindex="-1"></a>obsDF <span class="ot">=</span> <span class="fu">tibble</span>(<span class="at">obs =</span> gymDF<span class="sc">$</span>nSigned)</span>
+<span id="cb157-17"><a href="#cb157-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb157-18"><a href="#cb157-18" aria-hidden="true" tabindex="-1"></a>colors <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"simulated"</span> <span class="ot">=</span> <span class="st">"cadetblue"</span>, </span>
+<span id="cb157-19"><a href="#cb157-19" aria-hidden="true" tabindex="-1"></a>           <span class="st">"observed"</span> <span class="ot">=</span> <span class="st">"navyblue"</span>)</span>
+<span id="cb157-20"><a href="#cb157-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb157-21"><a href="#cb157-21" aria-hidden="true" tabindex="-1"></a><span class="do">## make plot</span></span>
+<span id="cb157-22"><a href="#cb157-22" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(simPredDF) <span class="sc">+</span></span>
+<span id="cb157-23"><a href="#cb157-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stat_density</span>(<span class="fu">aes</span>(<span class="at">x=</span>nSigned, </span>
+<span id="cb157-24"><a href="#cb157-24" aria-hidden="true" tabindex="-1"></a>                   <span class="at">group =</span> sampDrawID,</span>
+<span id="cb157-25"><a href="#cb157-25" aria-hidden="true" tabindex="-1"></a>                   <span class="at">color =</span> <span class="st">"simulated"</span>),</span>
+<span id="cb157-26"><a href="#cb157-26" aria-hidden="true" tabindex="-1"></a>               <span class="at">geom =</span> <span class="st">"line"</span>, </span>
+<span id="cb157-27"><a href="#cb157-27" aria-hidden="true" tabindex="-1"></a>               <span class="at">position =</span> <span class="st">"identity"</span>) <span class="sc">+</span></span>
+<span id="cb157-28"><a href="#cb157-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stat_density</span>(<span class="at">data =</span> obsDF, <span class="fu">aes</span>(<span class="at">x=</span>obs, </span>
+<span id="cb157-29"><a href="#cb157-29" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">color =</span> <span class="st">"observed"</span>),</span>
+<span id="cb157-30"><a href="#cb157-30" aria-hidden="true" tabindex="-1"></a>               <span class="at">geom =</span> <span class="st">"line"</span>,  </span>
+<span id="cb157-31"><a href="#cb157-31" aria-hidden="true" tabindex="-1"></a>               <span class="at">position =</span> <span class="st">"identity"</span>,</span>
+<span id="cb157-32"><a href="#cb157-32" aria-hidden="true" tabindex="-1"></a>               <span class="at">lwd =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb157-33"><a href="#cb157-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> colors) <span class="sc">+</span></span>
+<span id="cb157-34"><a href="#cb157-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"# of Monthly Signups"</span>,</span>
+<span id="cb157-35"><a href="#cb157-35" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Density Estimated from Data"</span>,</span>
+<span id="cb157-36"><a href="#cb157-36" aria-hidden="true" tabindex="-1"></a>       <span class="at">color =</span> <span class="st">"Data Type"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-135-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The figure above is encouraging!! It looks like the actual data might get generated from our posterior distribution. The partial pooling model seems to work! Hooray! Next chapter we interpret the results of this model for decision making.</p>
+</section>
+</section>
+</section>
+<section id="compelling-decisions-and-actions-under-uncertainty" class="level2">
+<h2 class="anchored" data-anchor-id="compelling-decisions-and-actions-under-uncertainty">Compelling decisions and actions under uncertainty</h2>
+<p>We now continue last chapter’s investigation of Crossfit Gym’s use of yoga. Our goal is to bring the mathematical estimates of our posterior distribution’s parameters back into the real-world with compelling and visually-based recommendations. To do this, we 1) define our <em>outcomes of interest</em>, 2) <em>compute a posterior distribution</em> for those outcomes, and 3) communicate our beliefs about those outcomes by <em>visualizing the outcomes of interest</em>.</p>
+<section id="outcomes-of-interest" class="level3">
+<h3 class="anchored" data-anchor-id="outcomes-of-interest">Outcomes of interest</h3>
+<p>Our main outcome of interest is signup probability. We will investigate signup probability by investigating that particular node in relation to our decision. Representing this is the deceptively simple generative decision DAG shown below.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb158"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb158-1"><a href="#cb158-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dag_create</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb158-2"><a href="#cb158-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Yoga Stretching?"</span>,<span class="st">"yoga"</span>,</span>
+<span id="cb158-3"><a href="#cb158-3" aria-hidden="true" tabindex="-1"></a>           <span class="at">dec =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb158-4"><a href="#cb158-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_node</span>(<span class="st">"Signup Probability"</span>,<span class="st">"prob"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb158-5"><a href="#cb158-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_edge</span>(<span class="st">"yoga"</span>,<span class="st">"prob"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb158-6"><a href="#cb158-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_plate</span>(<span class="st">"Stretch Type"</span>,<span class="st">""</span>,</span>
+<span id="cb158-7"><a href="#cb158-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">nodeLabels =</span> <span class="fu">c</span>(<span class="st">"yoga"</span>,<span class="st">"prob"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb158-8"><a href="#cb158-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dag_render</span>(<span class="at">shortLabel =</span> <span class="cn">TRUE</span>, <span class="at">wrapWidth =</span> <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="grViz html-widget html-fill-item" id="htmlwidget-a0410349e08474188736" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-a0410349e08474188736">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\nsubgraph cluster1{\nlabel=\"Stretch Type X\"\n  \"1\" [label = \"Yoga\nStretching?\", shape = \"rect\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"2\" [label = \"Signup\nProbability\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] }\n\n\"1\"->\"2\" [style = \"solid\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<p>The top-down narrative of the generative decision DAG above is as follows. Crossfit Gyms decides on whether to offer yoga stretching and the sign-up probability across their gyms changes as a result. Our job is to quantify this change and form an opinion on whether to offer yoga stretching or not across the gyms; we will form our opinion using the posterior distribution.</p>
+</section>
+<section id="computing-posterior-distributions-for-outcomes-of-interest" class="level3">
+<h3 class="anchored" data-anchor-id="computing-posterior-distributions-for-outcomes-of-interest">Computing posterior distributions for outcomes of interest</h3>
+<p>The last model in the previous chapter gets us the generative DAG of Figure <a href="https://www.causact.com/compelling-decisions-and-actions-under-uncertainty#fig:partPoolingGM2">24.1</a>. Running it through the <code>dag_numpyro()</code> function yields a posterior distribution, but our job as analysts is not over. We now have to make sense of the posterior distribution and communicate its implications to stakeholders.</p>
+<p>Rerun the analysis at the end of the previous chapter concluding with:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb159"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb159-1"><a href="#cb159-1" aria-hidden="true" tabindex="-1"></a>drawsDF <span class="ot">=</span> graph3 <span class="sc">%&gt;%</span> <span class="fu">dag_numpyro</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>where <code>drawsDF</code> is a representative sample of the posterior distribution associated with partial pooling model. This data frame is a sample of 4,000 draws of 28 variables. Let’s list the 28 variables using <code>names(drawsDF)</code>.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb160"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb160-1"><a href="#cb160-1" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(drawsDF)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] "alpha_1"  "alpha_2"  "alpha_3"  "alpha_4"  "alpha_5"  "alpha_6" 
+ [7] "alpha_7"  "alpha_8"  "alpha_9"  "alpha_10" "alpha_11" "alpha_12"
+[13] "beta_1"   "beta_2"   "beta_3"   "beta_4"   "beta_5"   "beta_6"  
+[19] "beta_7"   "beta_8"   "beta_9"   "beta_10"  "beta_11"  "beta_12" 
+[25] "mu_alpha" "mu_beta"  "sd_alpha" "sd_beta" </code></pre>
+</div>
+</div>
+<p>Perusing our posterior’s 28 random variables, we might notice that <code>theta</code> is not one of them. Bummer! We are going to need to do some coding to get a representative sample for <code>theta</code>.</p>
+<p><code>theta</code> is omitted because it is a calculated node; its realization is a deterministic function of its parent <code>y</code> which is also a calculated node. Note that an oval’s double-perimeter is the visual clue for a calculated node. Its parents include both random and observed nodes. So to actually determine <code>theta</code>, we need follow the generative recipe from grandparents (<code>alpha</code>,<code>beta</code>,<code>j</code>, and <code>x</code>) to grandchild (<code>theta</code>) via linear predictor <code>y</code>.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb162"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb162-1"><a href="#cb162-1" aria-hidden="true" tabindex="-1"></a>graph3 <span class="sc">%&gt;%</span> <span class="fu">dag_render</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="grViz html-widget html-fill-item" id="htmlwidget-d8542c91a99e85c6bc68" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-d8542c91a99e85c6bc68">{"x":{"diagram":"digraph {\n\ngraph [layout = \"dot\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\",\n       labelloc = \"b\",\n       labeljust = \"r\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"ellipse\",\n      fixedsize = \"false\",\n      width = \"0.9\",\n      style = \"filled\",\n      fillcolor = \"AliceBlue\",\n      color = \"gray20\",\n      fontcolor = \"black\",\n      height = \"0.5\",\n      margin = \"0.05,0.05\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray20\",\n     arrowsize = \"0.5\",\n     fontcolor = \"black\"]\n\n  \"8\" [label = \"Avg Crossfit Intercept\nmu_alpha ~ normal(-1,1.5)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"9\" [label = \"Avg Crossfit Yoga Slope\nmu_beta ~ normal(0,0.75)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"10\" [label = \"SD Crossfit Intercept\nsd_alpha ~ uniform(0,3)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"11\" [label = \"SD Crossfit Yoga Slope\nsd_beta ~ uniform(0,1.5)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \nsubgraph cluster2{\nlabel=\"Gym j [12]\"\n  \"6\" [label = \"Gym Intercept\nalpha ~ normal(mu_alpha,sd_alpha)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"7\" [label = \"Gym Yoga Slope Coeff\nbeta ~ normal(mu_beta,sd_beta)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"aliceblue\", fontcolor = \"black\"] }\n\nsubgraph cluster3{\nlabel=\"Observation i [44]\"\n  \"1\" [label = \"Number of Signups\nk ~ binomial(nTrials,theta)\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"2\" [label = \"Signup Probability\ntheta = 1 / (1 + exp(-y))\", shape = \"ellipse\", peripheries = \"2\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"3\" [label = \"Number of Trials\nnTrials\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"4\" [label = \"Linear Predictor\ny = alpha[j] + beta[j] * x\", shape = \"ellipse\", peripheries = \"2\", fillcolor = \"aliceblue\", fontcolor = \"black\"] \n  \"5\" [label = \"Yoga Stretch Flag\nx\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] \n  \"12\" [label = \"Gym\nj\", shape = \"ellipse\", peripheries = \"1\", fillcolor = \"cadetblue\", fontcolor = \"black\"] }\n\n\"6\"->\"4\" [style = \"dashed\"] \n\"7\"->\"4\" [style = \"dashed\"] \n\"2\"->\"1\" [style = \"solid\"] \n\"3\"->\"1\" [style = \"solid\"] \n\"4\"->\"2\" [style = \"solid\"] \n\"5\"->\"4\" [style = \"solid\"] \n\"8\"->\"6\" [style = \"solid\"] \n\"9\"->\"7\" [style = \"solid\"] \n\"10\"->\"6\" [style = \"solid\"] \n\"11\"->\"7\" [style = \"solid\"] \n\"12\"->\"4\" [style = \"solid\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<p>Notice, we do not care about <code>mu_alpha</code> and the other parents of <code>alpha</code> and <code>beta</code>. Once we have a representative sample of <code>alpha</code> and <code>beta</code>, plus the observed nodes <code>j</code> and <code>x</code> , then we can calculate <code>theta</code>.</p>
+<p>For example, let’s estimate the additional sign-up probability when using “Yoga Stretch” at gym number 12?</p>
+<ol type="1">
+<li>Get a single draw of the required nodes from the representative sample:</li>
+</ol>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb163"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb163-1"><a href="#cb163-1" aria-hidden="true" tabindex="-1"></a>draw <span class="ot">=</span> drawsDF <span class="sc">%&gt;%</span> </span>
+<span id="cb163-2"><a href="#cb163-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_sample</span>(<span class="at">n=</span><span class="dv">1</span>) <span class="sc">%&gt;%</span> <span class="co"># get a random draw</span></span>
+<span id="cb163-3"><a href="#cb163-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(alpha_12,beta_12)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<ol type="1">
+<li>Compute a value for the linear predictor with and without yoga (i.e.&nbsp;<code>x=1</code> and <code>x=0</code>, respectively) using the formula shown for this node in the generative decision DAG. Plugging in for <code>x</code>, we get the two different values of linear preditor <code>y</code> that interest us: <code>x=1</code> <span class="math inline">\(\rightarrow y_{yoga} = \alpha{12}+\beta{12}*1\)</span>) and without yoga (<code>x=0</code> <span class="math inline">\(\rightarrow y_{trad} = \alpha{12}+\beta{12}*0 = \alpha_{12}\)</span>):</li>
+</ol>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb164"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb164-1"><a href="#cb164-1" aria-hidden="true" tabindex="-1"></a>draw <span class="ot">=</span> draw <span class="sc">%&gt;%</span></span>
+<span id="cb164-2"><a href="#cb164-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">y_yoga =</span> alpha_12 <span class="sc">+</span> beta_12 <span class="sc">*</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb164-3"><a href="#cb164-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">y_trad =</span> alpha_12)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<ol type="1">
+<li>Compute the values for <code>theta</code> with and without yoga at gym12 using the inverse-logit function (i.e.&nbsp;the link function formula shown for this node in the generative decision DAG):</li>
+</ol>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb165"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb165-1"><a href="#cb165-1" aria-hidden="true" tabindex="-1"></a>draw <span class="ot">=</span> draw <span class="sc">%&gt;%</span></span>
+<span id="cb165-2"><a href="#cb165-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">theta_yoga =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span><span class="sc">+</span><span class="fu">exp</span>(<span class="sc">-</span>y_yoga))) <span class="sc">%&gt;%</span></span>
+<span id="cb165-3"><a href="#cb165-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">theta_trad =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span><span class="sc">+</span><span class="fu">exp</span>(<span class="sc">-</span>y_trad)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<ol type="1">
+<li>Compute the increased probability of signup when using yoga at gym12:</li>
+</ol>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb166"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb166-1"><a href="#cb166-1" aria-hidden="true" tabindex="-1"></a>draw <span class="ot">=</span> draw <span class="sc">%&gt;%</span></span>
+<span id="cb166-2"><a href="#cb166-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">probIncDueToYoga =</span> </span>
+<span id="cb166-3"><a href="#cb166-3" aria-hidden="true" tabindex="-1"></a>           theta_yoga <span class="sc">-</span> theta_trad)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>And now, viewing these computed values:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb167"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb167-1"><a href="#cb167-1" aria-hidden="true" tabindex="-1"></a>draw</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="kable-table">
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 12%">
+<col style="width: 11%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 15%">
+<col style="width: 15%">
+<col style="width: 24%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: right;">alpha_12</th>
+<th style="text-align: right;">beta_12</th>
+<th style="text-align: right;">y_yoga</th>
+<th style="text-align: right;">y_trad</th>
+<th style="text-align: right;">theta_yoga</th>
+<th style="text-align: right;">theta_trad</th>
+<th style="text-align: right;">probIncDueToYoga</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">-2.992</td>
+<td style="text-align: right;">0.6414</td>
+<td style="text-align: right;">-2.351</td>
+<td style="text-align: right;">-2.992</td>
+<td style="text-align: right;">0.087</td>
+<td style="text-align: right;">0.0478</td>
+<td style="text-align: right;">0.0392</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<p>we see that for this draw, around 21% of yoga trial customers end up signing up for a membership versus 15% of customers doing traditional stretching. According to this draw then, approximately 6% is the signup probability increase due to yoga stretching.</p>
+<p>Let’s get a little mathematical and declare this difference in probabilities to be a new random variable <code>Z_{gymID}</code> like:</p>
+<p><span class="math display">\[
+Z_{12} \equiv \textrm{ Probability increase due to yoga stretching at gym 12}
+\]</span></p>
+<p>The following code scales the above four steps for creating one draw to creating a column of representative samples for <span class="math inline">\(Z_{12}\)</span>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb168"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb168-1"><a href="#cb168-1" aria-hidden="true" tabindex="-1"></a>postDF <span class="ot">=</span> drawsDF <span class="sc">%&gt;%</span></span>
+<span id="cb168-2"><a href="#cb168-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(alpha_12,beta_12) <span class="sc">%&gt;%</span></span>
+<span id="cb168-3"><a href="#cb168-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">y_yoga =</span> alpha_12 <span class="sc">+</span> beta_12 <span class="sc">*</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb168-4"><a href="#cb168-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">y_trad =</span> alpha_12) <span class="sc">%&gt;%</span></span>
+<span id="cb168-5"><a href="#cb168-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">theta_yoga =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span><span class="sc">+</span><span class="fu">exp</span>(<span class="sc">-</span>y_yoga))) <span class="sc">%&gt;%</span></span>
+<span id="cb168-6"><a href="#cb168-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">theta_trad =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span><span class="sc">+</span><span class="fu">exp</span>(<span class="sc">-</span>y_trad))) <span class="sc">%&gt;%</span></span>
+<span id="cb168-7"><a href="#cb168-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">z_12 =</span> theta_yoga <span class="sc">-</span> theta_trad)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The column we just made, <code>z_12</code>, is our posterior distribution for the change in probability due to yoga stretching. We can visualize and summarize this posterior density:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb169"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb169-1"><a href="#cb169-1" aria-hidden="true" tabindex="-1"></a><span class="fu">gf_density</span>(<span class="sc">~</span> z_12, <span class="at">data =</span> postDF)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="causact_files/figure-html/unnamed-chunk-146-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb170"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb170-1"><a href="#cb170-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summarise_draws</span>(postDF) <span class="co"># or summarise(postDF$z_12)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="kable-table">
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 13%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 8%">
+<col style="width: 10%">
+<col style="width: 10%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">variable</th>
+<th style="text-align: right;">mean</th>
+<th style="text-align: right;">median</th>
+<th style="text-align: right;">sd</th>
+<th style="text-align: right;">mad</th>
+<th style="text-align: right;">q5</th>
+<th style="text-align: right;">q95</th>
+<th style="text-align: right;">rhat</th>
+<th style="text-align: right;">ess_bulk</th>
+<th style="text-align: right;">ess_tail</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">alpha_12</td>
+<td style="text-align: right;">-2.2472</td>
+<td style="text-align: right;">-2.2198</td>
+<td style="text-align: right;">0.5140</td>
+<td style="text-align: right;">0.5010</td>
+<td style="text-align: right;">-3.1171</td>
+<td style="text-align: right;">-1.4626</td>
+<td style="text-align: right;">1.0004</td>
+<td style="text-align: right;">1936</td>
+<td style="text-align: right;">1736</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">beta_12</td>
+<td style="text-align: right;">0.4880</td>
+<td style="text-align: right;">0.5074</td>
+<td style="text-align: right;">0.5725</td>
+<td style="text-align: right;">0.4108</td>
+<td style="text-align: right;">-0.4610</td>
+<td style="text-align: right;">1.3968</td>
+<td style="text-align: right;">1.0010</td>
+<td style="text-align: right;">2579</td>
+<td style="text-align: right;">2073</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">y_yoga</td>
+<td style="text-align: right;">-1.7592</td>
+<td style="text-align: right;">-1.7194</td>
+<td style="text-align: right;">0.7653</td>
+<td style="text-align: right;">0.6891</td>
+<td style="text-align: right;">-3.0460</td>
+<td style="text-align: right;">-0.5973</td>
+<td style="text-align: right;">0.9999</td>
+<td style="text-align: right;">2067</td>
+<td style="text-align: right;">2265</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">y_trad</td>
+<td style="text-align: right;">-2.2472</td>
+<td style="text-align: right;">-2.2198</td>
+<td style="text-align: right;">0.5140</td>
+<td style="text-align: right;">0.5010</td>
+<td style="text-align: right;">-3.1171</td>
+<td style="text-align: right;">-1.4626</td>
+<td style="text-align: right;">1.0004</td>
+<td style="text-align: right;">1936</td>
+<td style="text-align: right;">1736</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">theta_yoga</td>
+<td style="text-align: right;">0.1700</td>
+<td style="text-align: right;">0.1520</td>
+<td style="text-align: right;">0.1013</td>
+<td style="text-align: right;">0.0874</td>
+<td style="text-align: right;">0.0454</td>
+<td style="text-align: right;">0.3550</td>
+<td style="text-align: right;">0.9999</td>
+<td style="text-align: right;">2067</td>
+<td style="text-align: right;">2265</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">theta_trad</td>
+<td style="text-align: right;">0.1044</td>
+<td style="text-align: right;">0.0980</td>
+<td style="text-align: right;">0.0450</td>
+<td style="text-align: right;">0.0433</td>
+<td style="text-align: right;">0.0424</td>
+<td style="text-align: right;">0.1881</td>
+<td style="text-align: right;">1.0004</td>
+<td style="text-align: right;">1936</td>
+<td style="text-align: right;">1736</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">z_12</td>
+<td style="text-align: right;">0.0656</td>
+<td style="text-align: right;">0.0515</td>
+<td style="text-align: right;">0.0813</td>
+<td style="text-align: right;">0.0546</td>
+<td style="text-align: right;">-0.0327</td>
+<td style="text-align: right;">0.2129</td>
+<td style="text-align: right;">1.0007</td>
+<td style="text-align: right;">2337</td>
+<td style="text-align: right;">1624</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<p>and form only a mild opinion that yoga is probably helpful at gym 12 (i.e.&nbsp;most of the plausible values are above zero).</p>
 </section>
 </section>
 
